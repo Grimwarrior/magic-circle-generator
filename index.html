@@ -13,6 +13,13 @@
         <button id="generateBtn">Generate New Circle</button>
         <!-- Add more controls later: sliders, dropdowns, text inputs -->
     </div>
+ 
+    <div class="controls">
+        <label for="numCirclesSlider">Number of Rings:</label>
+        <input type="range" id="numCirclesSlider" name="numCirclesSlider" min="1" max="7" value="3">
+        <span id="numCirclesValue">3</span>
+        <button id="generateBtn">Generate New Circle</button>
+    </div>
 
     <div class="canvas-container">
         <canvas id="magicCircleCanvas" width="600" height="600"></canvas>

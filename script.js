@@ -1,6 +1,8 @@
 const canvas = document.getElementById('magicCircleCanvas');
 const ctx = canvas.getContext('2d'); // Get the 2D drawing context
 const generateBtn = document.getElementById('generateBtn');
+const numCirclesSlider = document.getElementById('numCirclesSlider');
+const numCirclesValueSpan = document.getElementById('numCirclesValue');
 
 const width = canvas.width;
 const height = canvas.height;
@@ -16,6 +18,53 @@ function drawCircle(x, y, radius, color = 'white', lineWidth = 2) {
     ctx.lineWidth = lineWidth;
     ctx.stroke();
 }
+
+
+/**
+ * Draws a regular polygon on the canvas.
+ * @param {number} cx - Center X coordinate.
+ * @param {number} cy - Center Y coordinate.
+ * @param {number} radius - Distance from center to vertices.
+ * @param {number} sides - Number of sides (e.g., 3 for triangle, 5 for pentagon).
+ * @param {number} startAngle - Rotation offset in radians (0 = first point is typically to the right).
+ * @param {string} [color='white'] - Stroke color.
+ * @param {number} [lineWidth=2] - Line width.
+ * @param {boolean} [fill=false] - Whether to fill the polygon.
+ * @param {string} [fillColor='grey'] - Fill color if fill is true.
+ */
+function drawPolygon(cx, cy, radius, sides, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
+    if (sides < 3) return; // Need at least 3 sides
+
+    ctx.beginPath();
+    // Calculate the angle between vertices
+    const angleStep = (Math.PI * 2) / sides;
+
+    // Move to the first vertex
+    let startX = cx + radius * Math.cos(startAngle);
+    let startY = cy + radius * Math.sin(startAngle);
+    ctx.moveTo(startX, startY);
+
+    // Draw lines to subsequent vertices
+    for (let i = 1; i <= sides; i++) {
+        const currentAngle = startAngle + i * angleStep;
+        const nextX = cx + radius * Math.cos(currentAngle);
+        const nextY = cy + radius * Math.sin(currentAngle);
+        ctx.lineTo(nextX, nextY);
+    }
+
+    // ctx.closePath(); // Connects the last vertex back to the first
+
+    if (fill) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+    }
+
+    // Always stroke after potential fill to ensure outline is visible
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+}
+
 
 function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1) {
     ctx.beginPath();
@@ -76,7 +125,7 @@ function generateMagicCircle() {
     ctx.clearRect(0, 0, width, height); // Clear previous drawing
 
     // 2. Define Parameters (Randomly for now)
-    const numOuterCircles = Math.floor(Math.random() * 3) + 1; // 1 to 3
+    const numOuterCircles = parseInt(numCirclesSlider.value); // NEW
     const maxRadius = Math.min(width, height) / 2 - 20; // Max radius with padding
     const baseLineWidth = Math.random() * 2 + 1; // 1 to 3
     const primaryColor = `hsl(${Math.random() * 360}, 80%, 70%)`; // Random vibrant color
@@ -91,10 +140,19 @@ function generateMagicCircle() {
     }
 
     // Draw an inner polygon (e.g., pentagram or hexagram)
-    const polyRadius = maxRadius * (0.5 + Math.random() * 0.2);
     const numSides = Math.random() < 0.5 ? 5 : 6; // 5 or 6 sides
     const startAngle = Math.random() * Math.PI * 2;
-    // drawPolygon(centerX, centerY, polyRadius, numSides, startAngle, secondaryColor, baseLineWidth); // Need to implement drawPolygon
+    
+    // --- Draw an inner polygon ---
+    const polySides = Math.floor(Math.random() * 4) + 3; // 3 to 6 sides (tri, sq, pent, hex)
+    const polyRadius = maxRadius * (0.4 + Math.random() * 0.3); // Place it somewhere inside
+    const polyAngle = Math.random() * Math.PI * 2; // Random rotation
+    const polyColor = secondaryColor; // Use one of your existing colors
+    const polyLineWidth = baseLineWidth;
+
+    console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`); // Debug log
+    drawPolygon(centerX, centerY, polyRadius, polySides, polyAngle, polyColor, polyLineWidth);
+    drawPolygon(centerX, centerY, polyRadius, numSides, startAngle, secondaryColor, baseLineWidth); // Need to implement drawPolygon
 
     // Place some symbols on a ring
     const symbolRadius = maxRadius * (0.7 + Math.random() * 0.1);
@@ -127,6 +185,12 @@ function generateMagicCircle() {
 
 // --- Event Listener ---
 generateBtn.addEventListener('click', generateMagicCircle);
+// Add an event listener to update the display and regenerate (optional auto-regen)
+numCirclesSlider.addEventListener('input', () => {
+    numCirclesValueSpan.textContent = numCirclesSlider.value;
+    // Optional: automatically regenerate when slider moves
+    generateMagicCircle();
+});
 
 // --- Initial Generation ---
 generateMagicCircle(); // Generate one when the page loads
