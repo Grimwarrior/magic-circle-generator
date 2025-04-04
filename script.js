@@ -5,6 +5,93 @@ const ctx = canvas.getContext('2d');
 const generateBtn = document.getElementById('generateBtn');
 const numCirclesSlider = document.getElementById('numCirclesSlider');
 const numCirclesValueSpan = document.getElementById('numCirclesValue');
+const symbolSetSelect = document.getElementById('symbolSetSelect');
+if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found!");
+
+// --- Thematic Symbol Sets ---
+
+const geometricSymbols = [
+    '◇', '◆', '◈', '◉', '○', '●', '⊕', '⊖', '⊗', '⊘', '⊙',
+    '△', '▲', '▷', '▽', '▼', '◁', ' M', ' M',
+    '□', '■', '▢', '▣', ' M', ' M',
+    '☆', '★', '✶', '✷', '✸', '✹', '✺', '✡', '✨',
+    '🌀', '⌘', '♾', // Spiral, Command, Infinity
+];
+
+const astrologySymbols = [
+    '☉', '☽', '☿', '♀', '♂', '♃', '♄', '♅', '♆', '♇', // Sun, Moon, Planets
+    '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', // Zodiac
+    '☌', '☍', '⚹', '□', '△', // Aspects (Conjunction, Opposition, Sextile, Square, Trine)
+    ' M', ' M' // Nodes (Ascending, Descending - Placeholders if font lacks them)
+];
+
+const alchemySymbols = [
+    '🜁', '🜂', '🜃', '🜄', // Elements: Air, Fire, Water, Earth
+    '🜀', // Quintessence / Aether
+    '🜇', // Sulfur
+    '🜍', // Quicksilver / Mercury
+    '🜔', // Salt
+    '🜚', // Gold / Sol
+    ' M', // Silver / Luna (using Moon symbol as fallback)
+    '♀', // Copper / Venus
+    '♂', // Iron / Mars
+    '♃', // Tin / Jupiter
+    '♄', // Lead / Saturn
+    ' M', // Antimony (Placeholder)
+    ' M', // Arsenic (Placeholder)
+    ' M', // Bismuth (Placeholder)
+    ' M', // Platinum (Placeholder)
+    ' M', ' M', ' M', // Vitriol, Nitre, etc. (Placeholders)
+];
+
+// --- RUNES (Elder Futhark Example) ---
+// IMPORTANT: These will ONLY display correctly if the user's browser/system
+// has a font that includes the Runic Unicode block (U+16A0 to U+16FF).
+// Common system fonts like Segoe UI Symbol (Windows) or fonts installed
+// by default on Mac/Linux might work. Otherwise, they'll appear as boxes '□'.
+// We'll discuss loading a specific web font for them later if needed.
+const runeSymbols = [
+    'ᚠ', // Fehu
+    'ᚢ', // Uruz
+    'ᚦ', // Thurisaz
+    'ᚨ', // Ansuz
+    'ᚱ', // Raidho
+    'ᚲ', // Kauna
+    'ᚷ', // Gebo
+    'ᚹ', // Wunjo
+    'ᚺ', // Hagalaz
+    'ᚾ', // Naudiz
+    'ᛁ', // Isa
+    'ᛃ', // Jera
+    'ᛇ', // Eihwaz
+    'ᛈ', // Pertho
+    'ᛉ', // Algiz
+    'ᛊ', // Sowilo
+    'ᛏ', // Tiwaz
+    'ᛒ', // Berkano
+    'ᛖ', // Ehwaz
+    'ᛗ', // Mannaz
+    'ᛚ', // Laguz
+    'ᛜ', // Ingwaz
+    'ᛟ', // Othala
+    'ᛞ'  // Dagaz
+];
+
+// --- Mapping for Selection ---
+// This object maps the value we'll use in the HTML dropdown
+// to the actual JavaScript array defined above.
+const symbolSets = {
+    'geometric': geometricSymbols,
+    'astrology': astrologySymbols,
+    'alchemy': alchemySymbols,
+    'runes': runeSymbols,
+    'all': [...geometricSymbols, ...astrologySymbols, ...alchemySymbols, ...runeSymbols] // Combine all sets
+};
+
+// Default starting set (we'll link this to the dropdown later)
+// let currentSymbols = symbolSets['geometric']; // Start with geometric
+// Near top where arrays are defined:
+let currentSymbols; // Declare it, but don't assign a default here anymore.
 
 // --- Check if elements were found ---
 // Add these checks right after selecting elements!
@@ -226,6 +313,11 @@ function generateMagicCircle() {
     const secondaryColor = 'rgba(200, 200, 200, 0.7)';
     const symbolColor = primaryColor;
 
+    // Inside generateMagicCircle, after reading slider value, before drawing loops:
+    const selectedSetKey = symbolSetSelect.value;
+    currentSymbols = symbolSets[selectedSetKey] || symbolSets['geometric']; // Use selected set, fallback to geometric if key is invalid
+    console.log(`Using symbol set: ${selectedSetKey}`); // Log which set is active
+
     // 3. Draw Base Elements
 
     // Draw Outer Circles (Deterministic Radius)
@@ -283,7 +375,8 @@ function generateMagicCircle() {
             const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i;
             const symX = centerX + symbolRadius * Math.cos(angle);
             const symY = centerY + symbolRadius * Math.sin(angle);
-            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            // const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]; OLD
+            const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)]; // NEW LINE - Use the active set
             const symbolSize = 18 + Math.random() * 8;
             drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
         }
@@ -337,4 +430,14 @@ if (numCirclesSlider && numCirclesValueSpan) {
 
 } else {
     console.error("Could not attach listener or set initial value for Slider/Span!");
+}
+
+if (symbolSetSelect) {
+    symbolSetSelect.addEventListener('change', () => { // 'change' is better for select elements
+        console.log(`Symbol set dropdown changed to: ${symbolSetSelect.value}`);
+        generateMagicCircle(); // Regenerate the circle with the new set
+    });
+    console.log("Symbol set select listener attached.");
+} else {
+    console.error("Could not attach listener to Symbol Set select!");
 }
