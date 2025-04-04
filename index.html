@@ -9,21 +9,19 @@
 <body>
     <h1>Magic Circle Generator</h1>
 
-    <div class="controls">
-        <button id="generateBtn">Generate New Circle</button>
-        <!-- Add more controls later: sliders, dropdowns, text inputs -->
-    </div>
- 
+    <!-- REMOVED the first controls div -->
+
+    <!-- Keep this section with all controls together -->
     <div class="controls">
         <label for="numCirclesSlider">Number of Rings:</label>
         <input type="range" id="numCirclesSlider" name="numCirclesSlider" min="1" max="7" value="3">
         <span id="numCirclesValue">3</span>
-        <button id="generateBtn">Generate New Circle</button>
+        <button id="generateBtn">Generate New Circle</button> <!-- Now there's only ONE -->
+        <!-- Add more controls later here -->
     </div>
 
     <div class="canvas-container">
         <canvas id="magicCircleCanvas" width="600" height="600"></canvas>
-        <!-- Width/Height define the drawing area resolution -->
     </div>
 
     <script src="script.js"></script>
