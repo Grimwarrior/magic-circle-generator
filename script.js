@@ -78,6 +78,52 @@ function drawSymbol(symbol, x, y, size = 20, color = 'white') {
     ctx.fillText(symbol, x, y);
 }
 
+/**
+ * Draws a star shape on the canvas.
+ * @param {number} cx - Center X coordinate.
+ * @param {number} cy - Center Y coordinate.
+ * @param {number} outerRadius - Distance from center to the outer points (tips).
+ * @param {number} innerRadius - Distance from center to the inner points (valleys).
+ * @param {number} points - Number of points the star should have (e.g., 5 for a pentagram).
+ * @param {number} startAngle - Rotation offset in radians (0 = first outer point typically upwards or right).
+ * @param {string} [color='white'] - Stroke color.
+ * @param {number} [lineWidth=2] - Line width.
+ * @param {boolean} [fill=false] - Whether to fill the star.
+ * @param {string} [fillColor='grey'] - Fill color if fill is true.
+ */
+function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
+    if (points < 2 || outerRadius <= 0 || innerRadius < 0) return; // Need at least 2 points and positive radii
+
+    ctx.beginPath();
+    // Calculate the angle between each point (outer and inner combined)
+    const angleStep = Math.PI / points; // Half the step of a polygon with the same points
+
+    for (let i = 0; i < 2 * points; i++) {
+        const radius = (i % 2 === 0) ? outerRadius : innerRadius; // Alternate radius
+        const currentAngle = startAngle + i * angleStep;
+        const currentX = cx + radius * Math.cos(currentAngle);
+        const currentY = cy + radius * Math.sin(currentAngle);
+
+        if (i === 0) {
+            ctx.moveTo(currentX, currentY); // Move to the first point
+        } else {
+            ctx.lineTo(currentX, currentY); // Draw line to the next point
+        }
+    }
+
+    ctx.closePath(); // Connect the last point back to the first
+
+    if (fill) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+    }
+
+    // Always stroke after potential fill
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+}
+
 // --- The Main Generation Function ---
 function generateMagicCircle() {
     console.log("--- generateMagicCircle START ---"); // Log start
@@ -123,23 +169,37 @@ function generateMagicCircle() {
         drawCircle(centerX, centerY, radius, primaryColor, lineWidth);
     }
 
-    // Draw ONE inner polygon (Optional)
-    if (Math.random() > 0.3) {
-        const polySides = Math.floor(Math.random() * 4) + 3;
-        const minCircleRadius = numOuterCircles > 0 ? maxRadius * (1 - (numOuterCircles - 1) * circleSpacing) : maxRadius * 0.5; // Handle case of 0 circles
-        const polyRadius = minCircleRadius * (0.3 + Math.random() * 0.4);
+    // --- Draw ONE inner shape (Polygon or Star) ---
+    const shapeType = Math.random(); // Random number to decide shape
+    const shapeStartAngle = Math.random() * Math.PI * 2; // Random rotation
+    const shapeColor = secondaryColor;
+    const shapeLineWidth = baseLineWidth;
+    const minCircleRadius = numOuterCircles > 0 ? maxRadius * (1 - (numOuterCircles - 1) * circleSpacing) : maxRadius * 0.5; // Recalculate innermost radius
 
-        if (polyRadius > 5) {
-            const polyAngle = Math.random() * Math.PI * 2;
-            const polyColor = secondaryColor;
-            const polyLineWidth = baseLineWidth;
-            console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
-            drawPolygon(centerX, centerY, polyRadius, polySides, polyAngle, polyColor, polyLineWidth);
-        } else {
-             console.log("Skipping polygon: calculated radius too small");
+    if (minCircleRadius > 10) { // Only draw if there's reasonable space
+        if (shapeType < 0.5) { // 50% chance for Polygon
+            const polySides = Math.floor(Math.random() * 4) + 3; // 3 to 6 sides
+            const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4); // Size relative to inner circle
+            if (polyRadius > 5) {
+                console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
+                drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
+            } else {
+                console.log("Skipping polygon: calculated radius too small");
+            }
+        } else { // 50% chance for Star
+            const starPoints = Math.floor(Math.random() * 4) + 4; // 4 to 7 points
+            const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4); // Outer radius relative to inner circle
+            const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2); // Inner radius relative to outer (e.g., 40-60%)
+
+            if (starOuterRadius > 5 && starInnerRadius > 0) {
+                console.log(`Drawing star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
+                drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
+            } else {
+                console.log("Skipping star: calculated radii invalid");
+            }
         }
     } else {
-         console.log("Skipping polygon: random chance");
+        console.log("Skipping inner shape: minCircleRadius too small");
     }
 
     // Place some symbols on a ring
