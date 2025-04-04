@@ -68,8 +68,77 @@ function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1) {
 }
 
 // --- Symbol/Glyph Resources ---
-const symbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '✨', '★', '✡', '⚪', '⚫', '△', '▽', '☐'];
+const symbols = [
+    // --- Basic Geometry & Stars ---
+    '◇', '◆', '◈', '◉', '○', '●', '⊕', '⊖', '⊗', '⊘', '⊙', // Circles & Diamonds
+    '△', '▲', '▷', '▽', '▼', '◁', // Triangles
+    '□', '■', '▢', '▣', // Squares
+    '☆', '★', '✶', '✷', '✸', '✹', '✺', '✡', '✨', // Stars & Sparkles
 
+    // --- Astrological ---
+    '☉', // Sun
+    '☽', // Moon (Crescent)
+    '☿', // Mercury
+    '♀', // Venus
+    '⊕', // Earth (Alternative)
+    '♂', // Mars
+    '♃', // Jupiter
+    '♄', // Saturn
+    '♅', // Uranus
+    '♆', // Neptune
+    '♇', // Pluto
+    '♈', // Aries
+    '♉', // Taurus
+    '♊', // Gemini
+    '♋', // Cancer
+    '♌', // Leo
+    '♍', // Virgo
+    '♎', // Libra
+    '♏', // Scorpio
+    '♐', // Sagittarius
+    '♑', // Capricorn
+    '♒', // Aquarius
+    '♓', // Pisces
+    '☌', // Conjunction
+    '☍', // Opposition
+    '⚹', // Sextile
+    '□', // Square aspect (duplicate, but ok)
+    '△', // Trine aspect (duplicate, but ok)
+
+    // --- Alchemy & Elements (Selection) ---
+    '🜁', // Air
+    '🜂', // Fire
+    '🜃', // Water
+    '🜄', // Earth
+    '🜀', // Quintessence / Aether
+    '🜇', // Sulfur
+    '🜍', // Quicksilver / Mercury
+    '☿', // Mercury (duplicate)
+    '🜔', // Salt
+    '🜚', // Gold / Sol
+    '☽', // Silver / Luna (duplicate)
+    '♀', // Copper / Venus (duplicate)
+    '♂', // Iron / Mars (duplicate)
+    '♃', // Tin / Jupiter (duplicate)
+    '♄', // Lead / Saturn (duplicate)
+
+    // --- Miscellaneous / Abstract ---
+    '♾', // Infinity
+    '⚕', // Staff of Hermes
+    '⚖', // Scales
+    '⚓', // Anchor
+    '⚔', // Crossed Swords
+    '⚘', // Flower
+    '⚡', // Lightning
+    '⏳', // Hourglass
+    '🗝', // Key
+    '🌀', // Cyclone / Spiral
+    '⌘', // Command Key Symbol (looks cool)
+    '࿊', // Tibetan Symbol Nor Bu Nyis -Khyil
+    '࿋', // Tibetan Symbol Nor Bu Gsum -Khyil
+    '࿌', // Tibetan Symbol Nor Bu Bzhi -Khyil
+    // Add Runes here if you find a font that supports them well, e.g., 'ᚠ', 'ᚢ', 'ᚦ'...
+];
 function drawSymbol(symbol, x, y, size = 20, color = 'white') {
     ctx.fillStyle = color;
     ctx.font = `${size}px Arial`;
