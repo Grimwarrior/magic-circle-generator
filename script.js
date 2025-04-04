@@ -12,6 +12,8 @@ const centerY = height / 2;
 // --- Drawing Helper Functions ---
 
 function drawCircle(x, y, radius, color = 'white', lineWidth = 2) {
+    // Prevent drawing circles with negative radius, which can cause errors
+    if (radius <= 0) return;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2); // Full circle
     ctx.strokeStyle = color;
@@ -33,18 +35,15 @@ function drawCircle(x, y, radius, color = 'white', lineWidth = 2) {
  * @param {string} [fillColor='grey'] - Fill color if fill is true.
  */
 function drawPolygon(cx, cy, radius, sides, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
-    if (sides < 3) return; // Need at least 3 sides
+    if (sides < 3 || radius <= 0) return; // Need at least 3 sides and positive radius
 
     ctx.beginPath();
-    // Calculate the angle between vertices
     const angleStep = (Math.PI * 2) / sides;
 
-    // Move to the first vertex
     let startX = cx + radius * Math.cos(startAngle);
     let startY = cy + radius * Math.sin(startAngle);
     ctx.moveTo(startX, startY);
 
-    // Draw lines to subsequent vertices
     for (let i = 1; i <= sides; i++) {
         const currentAngle = startAngle + i * angleStep;
         const nextX = cx + radius * Math.cos(currentAngle);
@@ -52,14 +51,13 @@ function drawPolygon(cx, cy, radius, sides, startAngle, color = 'white', lineWid
         ctx.lineTo(nextX, nextY);
     }
 
-    // ctx.closePath(); // Connects the last vertex back to the first
+    // ctx.closePath(); // Use this if you want the shape explicitly closed, good for filling
 
     if (fill) {
         ctx.fillStyle = fillColor;
         ctx.fill();
     }
 
-    // Always stroke after potential fill to ensure outline is visible
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
@@ -75,46 +73,20 @@ function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1) {
     ctx.stroke();
 }
 
-// Add more helpers: drawPolygon, drawTextOnArc, drawSymbol...
-
-// --- Symbol/Glyph Resources (Example) ---
-// You'll need actual symbols. These could be:
-// 1. Unicode characters from specific blocks
-// 2. Pre-loaded images (use ctx.drawImage)
-// 3. SVG paths drawn onto the canvas
-// 4. Procedurally generated shapes
-const symbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '룬', '★', '✡']; // Example symbols
+// --- Symbol/Glyph Resources ---
+const symbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '✨', '★', '✡', '⚪', '⚫', '△', '▽', '☐']; // Added a few more
 
 function drawSymbol(symbol, x, y, size = 20, color = 'white') {
     ctx.fillStyle = color;
-    ctx.font = `${size}px Arial`; // Use a specific symbol font if you have one
+    ctx.font = `${size}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(symbol, x, y);
 }
 
- // --- Text on Arc Helper (More Complex) ---
-function drawTextOnArc(text, x, y, radius, startAngle, angularDistance, color = 'white', fontSize = 15) {
-    ctx.fillStyle = color;
-    ctx.font = `${fontSize}px 'Times New Roman'`; // Or a more thematic font
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const angleStep = angularDistance / text.length;
-    ctx.save(); // Save context state
-    ctx.translate(x, y); // Move origin to circle center
-
-    for (let i = 0; i < text.length; i++) {
-        const charAngle = startAngle + i * angleStep + angleStep / 2; // Center char on its segment
-
-        ctx.save();
-        ctx.rotate(charAngle); // Rotate context for the character
-        // Adjust y position slightly outwards if needed, and flip if drawing on bottom half
-        // This simple version places the base of the text on the radius
-        ctx.fillText(text[i], 0, -radius);
-        ctx.restore();
-    }
-    ctx.restore(); // Restore original context state
+ // --- Text on Arc Helper (Keep as is for now) ---
+function drawTextOnArc(/* ... parameters ... */) {
+    // ... (existing code) ...
 }
 
 
@@ -122,75 +94,107 @@ function drawTextOnArc(text, x, y, radius, startAngle, angularDistance, color = 
 
 function generateMagicCircle() {
     // 1. Clear the canvas
-    ctx.clearRect(0, 0, width, height); // Clear previous drawing
+    ctx.clearRect(0, 0, width, height);
 
-    // 2. Define Parameters (Randomly for now)
-    const numOuterCircles = parseInt(numCirclesSlider.value); // NEW
-    const maxRadius = Math.min(width, height) / 2 - 20; // Max radius with padding
-    const baseLineWidth = Math.random() * 2 + 1; // 1 to 3
-    const primaryColor = `hsl(${Math.random() * 360}, 80%, 70%)`; // Random vibrant color
+    // 2. Read Controls & Define Parameters
+    const numOuterCircles = parseInt(numCirclesSlider.value); // Read slider value
+    console.log("Generating with numOuterCircles:", numOuterCircles); // Debug log
+
+    const maxRadius = Math.min(width, height) / 2 - 15; // Slightly smaller padding
+    const baseLineWidth = 1.5; // Let's use a fixed base width for now
+    const primaryColor = `hsl(${Math.random() * 360}, 80%, 70%)`;
     const secondaryColor = 'rgba(200, 200, 200, 0.7)';
+    const symbolColor = primaryColor; // Use primary color for symbols too
 
-    // 3. Draw Base Elements (Example Logic)
+    // 3. Draw Base Elements
 
-    // Draw Outer Circles
+    // Draw Outer Circles (Deterministic Radius)
+    const circleSpacing = 0.15; // Fixed spacing factor (adjust as needed)
     for (let i = 0; i < numOuterCircles; i++) {
-        const radius = maxRadius * (1 - i * 0.1 * Math.random());
-        drawCircle(centerX, centerY, radius, primaryColor, baseLineWidth + i);
+        // Calculate radius more predictably: start from maxRadius and decrease
+        const radius = maxRadius * (1 - i * circleSpacing);
+        // Make inner circles slightly thinner or same width
+        const lineWidth = Math.max(1, baseLineWidth - i * 0.2);
+        console.log(`Drawing circle ${i}: radius ${radius.toFixed(1)}, lineWidth ${lineWidth.toFixed(1)}`) // Debug log
+        drawCircle(centerX, centerY, radius, primaryColor, lineWidth);
     }
 
-    // Draw an inner polygon (e.g., pentagram or hexagram)
-    const numSides = Math.random() < 0.5 ? 5 : 6; // 5 or 6 sides
-    const startAngle = Math.random() * Math.PI * 2;
-    
-    // --- Draw an inner polygon ---
-    const polySides = Math.floor(Math.random() * 4) + 3; // 3 to 6 sides (tri, sq, pent, hex)
-    const polyRadius = maxRadius * (0.4 + Math.random() * 0.3); // Place it somewhere inside
-    const polyAngle = Math.random() * Math.PI * 2; // Random rotation
-    const polyColor = secondaryColor; // Use one of your existing colors
-    const polyLineWidth = baseLineWidth;
+    // --- Draw ONE inner polygon ---
+    // Decide if we even draw a polygon (let's make it random for now)
+    if (Math.random() > 0.3) { // 70% chance to draw a polygon
+        const polySides = Math.floor(Math.random() * 4) + 3; // 3 to 6 sides
+        // Ensure polygon radius is smaller than the innermost circle drawn
+        // The innermost circle's radius is roughly maxRadius * (1 - (numOuterCircles-1) * circleSpacing)
+        const minCircleRadius = maxRadius * (1 - (numOuterCircles - 1) * circleSpacing);
+        // Place polygon radius somewhere between 30% and 70% of the innermost circle radius
+        const polyRadius = minCircleRadius * (0.3 + Math.random() * 0.4);
 
-    console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`); // Debug log
-    drawPolygon(centerX, centerY, polyRadius, polySides, polyAngle, polyColor, polyLineWidth);
-    drawPolygon(centerX, centerY, polyRadius, numSides, startAngle, secondaryColor, baseLineWidth); // Need to implement drawPolygon
+        if (polyRadius > 5) { // Only draw if it's not too tiny
+            const polyAngle = Math.random() * Math.PI * 2;
+            const polyColor = secondaryColor;
+            const polyLineWidth = baseLineWidth;
+            console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
+            drawPolygon(centerX, centerY, polyRadius, polySides, polyAngle, polyColor, polyLineWidth);
+        } else {
+            console.log("Skipping polygon: calculated radius too small");
+        }
+    } else {
+         console.log("Skipping polygon: random chance");
+    }
+    // REMOVED the second, duplicate drawPolygon call here
 
-    // Place some symbols on a ring
-    const symbolRadius = maxRadius * (0.7 + Math.random() * 0.1);
+
+    // --- Place some symbols on a ring ---
+    // Make symbol ring radius relative to maxRadius, ensure it's inside the outermost circle
+    const symbolRadiusFactor = 0.6 + Math.random() * 0.25; // Place symbols between 60% and 85% of maxRadius
+    const symbolRadius = maxRadius * symbolRadiusFactor;
     const numSymbols = Math.floor(Math.random() * 7) + 4; // 4 to 10 symbols
-    for (let i = 0; i < numSymbols; i++) {
-        const angle = (Math.PI * 2 / numSymbols) * i + startAngle / 2; // Distribute evenly
-        const symX = centerX + symbolRadius * Math.cos(angle);
-        const symY = centerY + symbolRadius * Math.sin(angle);
-        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-        drawSymbol(randomSymbol, symX, symY, 20 + Math.random() * 10, primaryColor);
+    const symbolStartAngle = Math.random() * Math.PI * 2; // Give symbols their own random start angle
+
+    if (symbolRadius > 0) {
+        console.log(`Drawing ${numSymbols} symbols at radius ${symbolRadius.toFixed(1)}`);
+        for (let i = 0; i < numSymbols; i++) {
+            const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i; // Distribute evenly
+            const symX = centerX + symbolRadius * Math.cos(angle);
+            const symY = centerY + symbolRadius * Math.sin(angle);
+            const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+            // Make symbol size slightly random too
+            const symbolSize = 18 + Math.random() * 8;
+            drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
+        }
     }
 
-    // Add some radial lines
-    const numLines = numSymbols * (Math.random() < 0.5 ? 1 : 2); // Same or double symbols
-    for (let i = 0; i < numLines; i++) {
-        const angle = (Math.PI * 2 / numLines) * i;
-        const lineEndX = centerX + maxRadius * Math.cos(angle);
-        const lineEndY = centerY + maxRadius * Math.sin(angle);
-        const lineStartX = centerX + maxRadius * 0.2 * Math.cos(angle); // Start lines from an inner radius
-        const lineStartY = centerY + maxRadius * 0.2 * Math.sin(angle);
-         drawLine(lineStartX, lineStartY, lineEndX, lineEndY, secondaryColor, 1);
-    }
+    // --- Add some radial lines ---
+    // Let's base the number of lines on something fixed or random, not symbols
+    const numLines = Math.random() < 0.5 ? 8 : 12; // Draw 8 or 12 radial lines
+    const lineStartRadius = maxRadius * 0.2; // Start lines from 20% radius
+    const lineEndRadius = maxRadius; // End lines at max radius
 
-    // Add some text (Example)
-    // const textRadius = maxRadius * 0.9;
-    // drawTextOnArc("SOMETHING MYSTICAL", centerX, centerY, textRadius, -Math.PI / 2, Math.PI, primaryColor, 16); // Top half
+    if (lineStartRadius < lineEndRadius) { // Only draw if there's space
+        console.log(`Drawing ${numLines} radial lines`);
+        for (let i = 0; i < numLines; i++) {
+            const angle = (Math.PI * 2 / numLines) * i;
+            const lineStartX = centerX + lineStartRadius * Math.cos(angle);
+            const lineStartY = centerY + lineStartRadius * Math.sin(angle);
+            const lineEndX = centerX + lineEndRadius * Math.cos(angle);
+            const lineEndY = centerY + lineEndRadius * Math.sin(angle);
+            drawLine(lineStartX, lineStartY, lineEndX, lineEndY, secondaryColor, 1); // Thin lines
+        }
+    }
 
     console.log("Generated a new circle!");
+    console.log("---"); // Separator for logs
 }
 
-// --- Event Listener ---
+// --- Event Listeners ---
 generateBtn.addEventListener('click', generateMagicCircle);
-// Add an event listener to update the display and regenerate (optional auto-regen)
+
 numCirclesSlider.addEventListener('input', () => {
-    numCirclesValueSpan.textContent = numCirclesSlider.value;
-    // Optional: automatically regenerate when slider moves
-    generateMagicCircle();
+    numCirclesValueSpan.textContent = numCirclesSlider.value; // Update text display
+    generateMagicCircle(); // Regenerate circle when slider changes
 });
 
-// --- Initial Generation ---
+
+// --- Initial Setup ---
+numCirclesValueSpan.textContent = numCirclesSlider.value; // <<< FIX 1: Set initial text for the slider value
 generateMagicCircle(); // Generate one when the page loads
