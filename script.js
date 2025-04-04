@@ -283,7 +283,7 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
 // --- The Main Generation Function ---
 function generateMagicCircle() {
     console.log("--- generateMagicCircle START ---"); // Log start
-
+    let shouldDrawRandomSymbolRing = true; // Flag for random symbol ring
     // Check if slider exists *inside* the function too (belt and suspenders)
     if (!numCirclesSlider) {
         console.error("Slider not accessible inside generateMagicCircle!");
@@ -344,6 +344,26 @@ function generateMagicCircle() {
             if (polyRadius > 5) {
                 console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
                 drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
+                // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
+                if (Math.random() < 0.7) {
+                    console.log(`Placing symbols on ${polySides} polygon vertices`);
+                    const angleStep = (Math.PI * 2) / polySides;
+                    const symbolSize = 15 + Math.random() * 5; // Slightly smaller symbols for vertices
+                    shouldDrawRandomSymbolRing = false; // Prevent drawing the ring if we place on vertices
+
+                    for (let i = 0; i < polySides; i++) {
+                        const currentAngle = shapeStartAngle + i * angleStep;
+                        // Calculate vertex position again (same math as in drawPolygon)
+                        const vertexX = centerX + polyRadius * Math.cos(currentAngle);
+                        const vertexY = centerY + polyRadius * Math.sin(currentAngle);
+                        // Pick a random symbol from the current set
+                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+                    }
+                    // Optionally, prevent drawing the other random symbol ring if we do this
+                    // shouldDrawRandomSymbolRing = false; // (We'd need to define this variable earlier)
+                }
+                // --- End symbol placement on vertices ---
             } else {
                 console.log("Skipping polygon: calculated radius too small");
             }
@@ -355,6 +375,34 @@ function generateMagicCircle() {
             if (starOuterRadius > 5 && starInnerRadius > 0) {
                 console.log(`Drawing star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
                 drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
+                // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
+                if (Math.random() < 0.7) {
+                    console.log(`Placing symbols on ${starPoints} star outer vertices`);
+                    const angleStep = (Math.PI * 2) / starPoints; // Angle between outer points
+                    const symbolSize = 15 + Math.random() * 5;
+                    shouldDrawRandomSymbolRing = false; // Prevent drawing the ring if we place on vertices
+                    // Loop through each outer point (0 to starPoints-1)
+
+                    for (let i = 0; i < starPoints; i++) {
+                        // We only want outer points, which correspond to even steps in drawStar's loop (0, 2, 4...)
+                        // Angle calculation needs to match drawStar precisely
+                        const currentAngle = shapeStartAngle + (2 * i) * (Math.PI / starPoints); // Angle to the outer point i
+                        const vertexX = centerX + starOuterRadius * Math.cos(currentAngle);
+                        const vertexY = centerY + starOuterRadius * Math.sin(currentAngle);
+                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+
+                        // OPTIONAL: Also draw on inner points?
+                        // const innerAngle = shapeStartAngle + (2 * i + 1) * (Math.PI / starPoints);
+                        // const innerX = centerX + starInnerRadius * Math.cos(innerAngle);
+                        // const innerY = centerY + starInnerRadius * Math.sin(innerAngle);
+                        // drawSymbol(randomSymbol, innerX, innerY, symbolSize * 0.8, symbolColor); // Smaller symbol for inner points
+                    }
+                    // Optionally, prevent drawing the other random symbol ring if we do this
+                    // shouldDrawRandomSymbolRing = false;
+                }
+                // --- End symbol placement on vertices ---
+
             } else {
                 console.log("Skipping star: calculated radii invalid");
             }
@@ -363,26 +411,34 @@ function generateMagicCircle() {
         console.log("Skipping inner shape: minCircleRadius too small");
     }
 
-    // Place some symbols on a ring
-    const symbolRadiusFactor = 0.6 + Math.random() * 0.25;
-    const symbolRadius = maxRadius * symbolRadiusFactor;
-    const numSymbols = Math.floor(Math.random() * 7) + 4;
-    const symbolStartAngle = Math.random() * Math.PI * 2;
 
-    if (symbolRadius > 0 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
-        console.log(`Drawing ${numSymbols} symbols at radius ${symbolRadius.toFixed(1)}`);
-        for (let i = 0; i < numSymbols; i++) {
-            const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i;
-            const symX = centerX + symbolRadius * Math.cos(angle);
-            const symY = centerY + symbolRadius * Math.sin(angle);
-            // const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]; OLD
-            const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)]; // NEW LINE - Use the active set
-            const symbolSize = 18 + Math.random() * 8;
-            drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
+
+    // --- Place some symbols on a random ring ---
+    if (shouldDrawRandomSymbolRing) { // <--- START of the conditional block
+        // Make symbol ring radius relative to maxRadius, ensure it's inside the outermost circle
+        const symbolRadiusFactor = 0.6 + Math.random() * 0.25; // Place symbols between 60% and 85% of maxRadius
+        const symbolRadius = maxRadius * symbolRadiusFactor;
+        const numSymbols = Math.floor(Math.random() * 7) + 4; // 4 to 10 symbols
+        const symbolStartAngle = Math.random() * Math.PI * 2; // Give symbols their own random start angle
+
+        if (symbolRadius > 0 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
+            console.log(`Drawing ${numSymbols} symbols at random radius ${symbolRadius.toFixed(1)}`);
+            for (let i = 0; i < numSymbols; i++) {
+                const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i; // Distribute evenly
+                const symX = centerX + symbolRadius * Math.cos(angle);
+                const symY = centerY + symbolRadius * Math.sin(angle);
+                // const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]; // OLD
+                const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)]; // NEW
+                // Make symbol size slightly random too
+                const symbolSize = 18 + Math.random() * 8;
+                drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
+            }
+        } else {
+            console.log("Skipping random symbols (radius or circle count too low)");
         }
-    } else {
-        console.log("Skipping symbols (radius or circle count too low)");
-    }
+    } else { // <--- ELSE block (runs if shouldDrawRandomSymbolRing is false)
+        console.log("Skipping random symbol ring because symbols were placed on vertices.");
+    } // <--- END of the conditional block
 
     // Add some radial lines
     const numLines = Math.random() < 0.5 ? 8 : 12;
