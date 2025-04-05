@@ -10,11 +10,17 @@ const innerShapeSelect = document.getElementById('innerShapeSelect');
 const numSymbolsSlider = document.getElementById('numSymbolsSlider');
 const numSymbolsValueSpan = document.getElementById('numSymbolsValue');
 
+// --- Check if elements were found (Check ALL essential ones) ---
+if (!canvas) console.error("ERROR: Canvas element not found!");
+if (!ctx) console.error("ERROR: Canvas context could not be created!");
+if (!generateBtn) console.error("ERROR: Generate button not found!");
+// *** USE CORRECTED VARIABLE NAMES IN CHECKS ***
+if (!numRingsSlider) console.error("ERROR: Number of Rings Slider not found!");
+if (!numRingsValueSpan) console.error("ERROR: Number of Rings Value Span not found!");
+if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found!");
+if (!innerShapeSelect) console.error("ERROR: Inner Shape Select dropdown not found!");
 if (!numSymbolsSlider) console.error("ERROR: Number of Symbols Slider not found!");
 if (!numSymbolsValueSpan) console.error("ERROR: Number of Symbols Value Span not found!");
-
-if (!innerShapeSelect) console.error("ERROR: Inner Shape Select dropdown not found!");
-if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found!");
 
 // --- Thematic Symbol Sets ---
 
@@ -106,8 +112,8 @@ let currentSymbols; // Declare it, but don't assign a default here anymore.
 if (!canvas) console.error("ERROR: Canvas element not found!");
 if (!ctx) console.error("ERROR: Canvas context could not be created!");
 if (!generateBtn) console.error("ERROR: Generate button not found!");
-if (!numCirclesSlider) console.error("ERROR: Number of Circles Slider not found!");
-if (!numCirclesValueSpan) console.error("ERROR: Number of Circles Value Span not found!");
+if (!numRingsSlider) console.error("ERROR: Number of Circles Slider not found!");
+if (!numRingsValueSpan) console.error("ERROR: Number of Circles Value Span not found!");
 
 
 // --- Canvas Setup ---
@@ -162,78 +168,6 @@ function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1) {
     ctx.stroke();
 }
 
-// --- Symbol/Glyph Resources ---
-const symbols = [
-    // --- Basic Geometry & Stars ---
-    '◇', '◆', '◈', '◉', '○', '●', '⊕', '⊖', '⊗', '⊘', '⊙', // Circles & Diamonds
-    '△', '▲', '▷', '▽', '▼', '◁', // Triangles
-    '□', '■', '▢', '▣', // Squares
-    '☆', '★', '✶', '✷', '✸', '✹', '✺', '✡', '✨', // Stars & Sparkles
-
-    // --- Astrological ---
-    '☉', // Sun
-    '☽', // Moon (Crescent)
-    '☿', // Mercury
-    '♀', // Venus
-    '⊕', // Earth (Alternative)
-    '♂', // Mars
-    '♃', // Jupiter
-    '♄', // Saturn
-    '♅', // Uranus
-    '♆', // Neptune
-    '♇', // Pluto
-    '♈', // Aries
-    '♉', // Taurus
-    '♊', // Gemini
-    '♋', // Cancer
-    '♌', // Leo
-    '♍', // Virgo
-    '♎', // Libra
-    '♏', // Scorpio
-    '♐', // Sagittarius
-    '♑', // Capricorn
-    '♒', // Aquarius
-    '♓', // Pisces
-    '☌', // Conjunction
-    '☍', // Opposition
-    '⚹', // Sextile
-    '□', // Square aspect (duplicate, but ok)
-    '△', // Trine aspect (duplicate, but ok)
-
-    // --- Alchemy & Elements (Selection) ---
-    '🜁', // Air
-    '🜂', // Fire
-    '🜃', // Water
-    '🜄', // Earth
-    '🜀', // Quintessence / Aether
-    '🜇', // Sulfur
-    '🜍', // Quicksilver / Mercury
-    '☿', // Mercury (duplicate)
-    '🜔', // Salt
-    '🜚', // Gold / Sol
-    '☽', // Silver / Luna (duplicate)
-    '♀', // Copper / Venus (duplicate)
-    '♂', // Iron / Mars (duplicate)
-    '♃', // Tin / Jupiter (duplicate)
-    '♄', // Lead / Saturn (duplicate)
-
-    // --- Miscellaneous / Abstract ---
-    '♾', // Infinity
-    '⚕', // Staff of Hermes
-    '⚖', // Scales
-    '⚓', // Anchor
-    '⚔', // Crossed Swords
-    '⚘', // Flower
-    '⚡', // Lightning
-    '⏳', // Hourglass
-    '🗝', // Key
-    '🌀', // Cyclone / Spiral
-    '⌘', // Command Key Symbol (looks cool)
-    '࿊', // Tibetan Symbol Nor Bu Nyis -Khyil
-    '࿋', // Tibetan Symbol Nor Bu Gsum -Khyil
-    '࿌', // Tibetan Symbol Nor Bu Bzhi -Khyil
-    // Add Runes here if you find a font that supports them well, e.g., 'ᚠ', 'ᚢ', 'ᚦ'...
-];
 function drawSymbol(symbol, x, y, size = 20, color = 'white') {
     ctx.fillStyle = color;
     ctx.font = `${size}px Arial`;
@@ -291,10 +225,11 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
 // --- The Main Generation Function ---
 function generateMagicCircle() {
     console.log("--- generateMagicCircle START ---"); // Log start
-    // Check if slider exists *inside* the function too (belt and suspenders)
-    if (!numCirclesSlider) {
-        console.error("Slider not accessible inside generateMagicCircle!");
-        return; // Stop if slider isn't found
+
+    // *** ENSURE ALL NEEDED ELEMENTS EXIST before proceeding ***
+    if (!ctx || !numRingsSlider || !symbolSetSelect || !innerShapeSelect || !numSymbolsSlider) {
+        console.error("Cannot generate circle: Essential elements missing!");
+        return; // Stop if core elements aren't available
     }
 
     // 1. Clear the canvas
@@ -302,10 +237,10 @@ function generateMagicCircle() {
 
     // 2. Read Controls & Define Parameters
     // **** THIS IS THE CRUCIAL LINE ****
-    const numOuterCircles = parseInt(numCirclesSlider.value);
+    const numOuterCircles = parseInt(numRingsSlider.value);
     // **** **** **** **** **** **** ****
 
-    console.log(`Slider value read: ${numCirclesSlider.value}, Parsed value: ${numOuterCircles}`); // Detailed log
+    console.log(`Slider value read: ${numRingsSlider.value}, Parsed value: ${numOuterCircles}`); // Detailed log
 
     if (isNaN(numOuterCircles)) {
         console.error("ERROR: numOuterCircles is NaN! Slider value might be invalid.");
@@ -580,8 +515,25 @@ if (numSymbolsSlider && numSymbolsValueSpan) {
 
 
 
-// Set initial text for ALL controls that need it
-if(numRingsSlider) numRingsValueSpan.textContent = numRingsSlider.value;
-if(numSymbolsSlider) numSymbolsValueSpan.textContent = numSymbolsSlider.value; // Set initial symbol count text
+// --- Initial Setup (AT THE VERY END) ---
+console.log("Running initial setup...");
 
-generateMagicCircle(); // Generate one when the page loads
+// *** USE CORRECTED VARIABLE NAMES ***
+if (numRingsSlider && numRingsValueSpan) {
+    numRingsValueSpan.textContent = numRingsSlider.value;
+    console.log(`Initial Rings value set to: ${numRingsSlider.value}`);
+} else { console.warn("Could not set initial rings value text."); }
+
+if (numSymbolsSlider && numSymbolsValueSpan) {
+    numSymbolsValueSpan.textContent = numSymbolsSlider.value;
+    console.log(`Initial Symbols value set to: ${numSymbolsSlider.value}`);
+} else { console.warn("Could not set initial symbols value text."); }
+
+
+// *** Make sure generateMagicCircle is called only if essential elements exist ***
+if (ctx && numRingsSlider && symbolSetSelect && innerShapeSelect && numSymbolsSlider) {
+    generateMagicCircle(); // Initial generation
+    console.log("Script loaded and initial circle generated.");
+} else {
+    console.error("INITIAL GENERATION SKIPPED due to missing essential elements!");
+}
