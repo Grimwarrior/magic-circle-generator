@@ -263,7 +263,9 @@ function generateMagicCircle() {
     const primaryColor = primaryColorPicker.value; // <<< READ FROM PICKER
     const secondaryColor = secondaryColorPicker.value; // <<< READ FROM PICKER
     const symbolColor = primaryColor;
-
+    const connectColor = secondaryColor; // <<< Use secondary for connecting lines
+    const radialLineColor = secondaryColor; // <<< Use secondary for radial lines (or primaryColor if you prefer)
+    console.log(`Using Primary: ${primaryColor}, Secondary: ${secondaryColor}, Connect: ${connectColor}, Radial: ${radialLineColor}`);
     // Inside generateMagicCircle, after reading slider value, before drawing loops:
     const selectedSetKey = symbolSetSelect.value;
     currentSymbols = symbolSets[selectedSetKey] || symbolSets['geometric']; // Use selected set, fallback to geometric if key is invalid
@@ -451,7 +453,7 @@ function generateMagicCircle() {
                 const lineStartY = centerY + lineStartRadius * Math.sin(angle);
                 const lineEndX = centerX + lineEndRadius * Math.cos(angle);
                 const lineEndY = centerY + lineEndRadius * Math.sin(angle);
-                drawLine(lineStartX, lineStartY, lineEndX, lineEndY, secondaryColor, 0.75);
+                drawLine(lineStartX, lineStartY, lineEndX, lineEndY, radialLineColor, 0.75);
             }
         } else {
             console.log("Skipping radial lines (circle count too low)");
