@@ -14,6 +14,8 @@ const secondaryColorPicker = document.getElementById('secondaryColorPicker');
 const glowToggle = document.getElementById('glowToggle');
 const lineStyleSelect = document.getElementById('lineStyleSelect');
 const paletteSelect = document.getElementById('paletteSelect');
+const saveBtn = document.getElementById('saveBtn');
+
 
 
 // --- Check if elements were found (Check ALL essential ones) ---
@@ -32,6 +34,7 @@ if (!secondaryColorPicker) console.error("ERROR: Secondary Color Picker not foun
 if (!glowToggle) console.error("ERROR: Glow Toggle checkbox not found!");
 if (!lineStyleSelect) console.error("ERROR: Line Style Select not found!");
 if (!paletteSelect) console.error("ERROR: Palette Select not found!");
+if (!saveBtn) console.error("ERROR: Save Button not found!");
 
 
 // --- Color Palettes ---
@@ -689,6 +692,34 @@ if (lineStyleSelect) {
     console.log("Line style select listener attached.");
 } else {
     console.error("Could not attach listener to Line Style select!");
+}
+// Downloads the current drawing
+if (saveBtn && canvas) { // Check if both button and canvas exist
+    saveBtn.addEventListener('click', () => {
+        console.log("Save button clicked.");
+
+        // 1. Get the image data from the canvas as a PNG
+        //    toDataURL() returns a base64 encoded string
+        const imageDataUrl = canvas.toDataURL('image/png');
+
+        // 2. Create a temporary link element
+        const link = document.createElement('a');
+
+        // 3. Set the link's attributes
+        link.href = imageDataUrl; // Point to the image data
+        link.download = 'magic_circle.png'; // Suggest a filename for the download
+
+        // 4. Simulate a click on the link to trigger the download
+        //    We need to append the link to the body, click it, then remove it.
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        console.log("Image download initiated.");
+    });
+    console.log("Save button listener attached.");
+} else {
+    console.error("Could not attach listener to Save button or canvas missing!");
 }
 
 // VISUAL Controls: ONLY redraw using EXISTING definition
