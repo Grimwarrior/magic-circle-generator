@@ -11,6 +11,7 @@ const numSymbolsSlider = document.getElementById('numSymbolsSlider');
 const numSymbolsValueSpan = document.getElementById('numSymbolsValue');
 const primaryColorPicker = document.getElementById('primaryColorPicker');
 const secondaryColorPicker = document.getElementById('secondaryColorPicker');
+const glowToggle = document.getElementById('glowToggle');
 
 // --- Check if elements were found (Check ALL essential ones) ---
 if (!canvas) console.error("ERROR: Canvas element not found!");
@@ -25,6 +26,9 @@ if (!numSymbolsSlider) console.error("ERROR: Number of Symbols Slider not found!
 if (!numSymbolsValueSpan) console.error("ERROR: Number of Symbols Value Span not found!");
 if (!primaryColorPicker) console.error("ERROR: Primary Color Picker not found!");
 if (!secondaryColorPicker) console.error("ERROR: Secondary Color Picker not found!");
+if (!glowToggle) console.error("ERROR: Glow Toggle checkbox not found!");
+
+
 
 // --- Thematic Symbol Sets ---
 
@@ -226,6 +230,28 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
     ctx.stroke();
 }
 
+/**
+ * Applies a glow effect using canvas shadow properties.
+ * @param {string} color - The color of the glow (usually matches the drawing color).
+ * @param {number} blurAmount - The amount of blur (e.g., 5, 10, 15).
+ */
+function applyGlow(color = 'white', blurAmount = 10) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blurAmount;
+    // Optional: Add small offsets if needed
+    // ctx.shadowOffsetX = 0;
+    // ctx.shadowOffsetY = 0;
+}
+
+/**
+ * Resets canvas shadow properties to disable glow.
+ */
+function resetGlow() {
+    ctx.shadowColor = 'transparent'; // Or 'rgba(0,0,0,0)'
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+}
 // --- The Main Generation Function ---
 function generateMagicCircle() {
     console.log("--- generateMagicCircle START ---"); // Log start
@@ -256,7 +282,7 @@ function generateMagicCircle() {
     let drawnShapeInfo = null; // To store details of the polygon/star drawn
     let didDrawConnectingLines = false; // NEW flag
 
-
+    
     const calculateSymbolSize = () => 18 + Math.random() * 8; // Base 18px, up to +8px randomness
     const maxRadius = Math.min(width, height) / 2 - 15;
     const baseLineWidth = 1.5;
@@ -265,6 +291,8 @@ function generateMagicCircle() {
     const symbolColor = primaryColor;
     const connectColor = secondaryColor; // <<< Use secondary for connecting lines
     const radialLineColor = secondaryColor; // <<< Use secondary for radial lines (or primaryColor if you prefer)
+    const enableGlow = glowToggle.checked; // <<< READ CHECKBOX STATE
+    const glowAmount = 10; // Adjust glow intensity here
     console.log(`Using Primary: ${primaryColor}, Secondary: ${secondaryColor}, Connect: ${connectColor}, Radial: ${radialLineColor}`);
     // Inside generateMagicCircle, after reading slider value, before drawing loops:
     const selectedSetKey = symbolSetSelect.value;
@@ -280,7 +308,9 @@ function generateMagicCircle() {
         const radius = maxRadius * (1 - i * circleSpacing);
         const lineWidth = Math.max(1, baseLineWidth - i * 0.2);
         console.log(`Drawing circle ${i}: radius ${radius.toFixed(1)}`);
+        if (enableGlow) applyGlow(primaryColor, glowAmount); // Apply glow before drawing
         drawCircle(centerX, centerY, radius, primaryColor, lineWidth);
+        if (enableGlow) resetGlow(); // Reset glow after drawing
     }
 
     // --- Draw ONE inner shape (Polygon or Star) ---
@@ -318,7 +348,9 @@ function generateMagicCircle() {
             const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4);
             if (polyRadius > 5) {
                 console.log(`Drawing selected polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
+                if (enableGlow) applyGlow(shapeColor, glowAmount);
                 drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
+                if (enableGlow) resetGlow();
                 drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // Store info
 
                 // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
@@ -332,7 +364,9 @@ function generateMagicCircle() {
                         const vertexX = centerX + polyRadius * Math.cos(currentAngle);
                         const vertexY = centerY + polyRadius * Math.sin(currentAngle);
                         const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7); // Maybe slightly less glow for symbols
                         drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+                        if (enableGlow) resetGlow();
                     }
                 } // <<< END of the 70% chance block
                 // --- End symbol placement on vertices ---
@@ -344,7 +378,9 @@ function generateMagicCircle() {
             const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2);
             if (starOuterRadius > 5 && starInnerRadius > 0) {
                 console.log(`Drawing selected star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
+                if (enableGlow) applyGlow(shapeColor, glowAmount);
                 drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
+                if (enableGlow) resetGlow();
                 drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; // Store info
 
                 // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
@@ -357,7 +393,9 @@ function generateMagicCircle() {
                         const vertexX = centerX + starOuterRadius * Math.cos(currentAngle);
                         const vertexY = centerY + starOuterRadius * Math.sin(currentAngle);
                         const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
                         drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+                        if (enableGlow) resetGlow();
                     }
                 } // <<< END of the 70% chance block
                 // --- End symbol placement on vertices ---
@@ -405,7 +443,9 @@ function generateMagicCircle() {
             const endY = centerY + targetCircleRadius * Math.sin(currentAngle);
 
             // Draw the line
+            if (enableGlow) applyGlow(connectColor, glowAmount * 0.5); // Less glow for thin lines
             drawLine(startX, startY, endX, endY, connectColor, connectLineWidth);
+            if (enableGlow) resetGlow();
         }
     } else {
         // Log why we skipped, checking each condition
@@ -432,7 +472,9 @@ function generateMagicCircle() {
             const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)]; // NEW
             // Make symbol size slightly random too
             const symbolSize = calculateSymbolSize();
-            drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
+            if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
+             drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
+             if (enableGlow) resetGlow();
         }
     } else {
         console.log("Skipping random symbols (count is 0, or radius/circle count too low)");
@@ -453,7 +495,9 @@ function generateMagicCircle() {
                 const lineStartY = centerY + lineStartRadius * Math.sin(angle);
                 const lineEndX = centerX + lineEndRadius * Math.cos(angle);
                 const lineEndY = centerY + lineEndRadius * Math.sin(angle);
+                if (enableGlow) applyGlow(radialLineColor, glowAmount * 0.5);
                 drawLine(lineStartX, lineStartY, lineEndX, lineEndY, radialLineColor, 0.75);
+                if (enableGlow) resetGlow();
             }
         } else {
             console.log("Skipping radial lines (circle count too low)");
@@ -540,6 +584,17 @@ if (secondaryColorPicker) {
      console.log("Secondary color picker listener attached.");
 } else {
      console.error("Could not attach listener to Secondary color picker!");
+}
+
+// Listener for Glow Toggle
+if (glowToggle) {
+    glowToggle.addEventListener('change', () => { // 'change' event works for checkboxes
+        console.log(`Glow toggle changed to: ${glowToggle.checked}`);
+        generateMagicCircle(); // Regenerate when toggle changes
+    });
+    console.log("Glow toggle listener attached.");
+} else {
+    console.error("Could not attach listener to Glow toggle!");
 }
 
 // --- Initial Setup (AT THE VERY END) ---
