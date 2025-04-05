@@ -381,7 +381,9 @@ function generateMagicCircle() {
                     const angleStep = (Math.PI * 2) / polySides;
                     const symbolSize = 15 + Math.random() * 5;
                     for (let i = 0; i < polySides; i++) {
-                        // ... (calculate vertexX, vertexY) ...
+                        const currentAngle = shapeStartAngle + i * angleStep;
+                        const vertexX = centerX + polyRadius * Math.cos(currentAngle);
+                        const vertexY = centerY + polyRadius * Math.sin(currentAngle);
                         const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
                         drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
                     }
@@ -406,7 +408,9 @@ function generateMagicCircle() {
                     const angleStep = (Math.PI * 2) / starPoints;
                     const symbolSize = 15 + Math.random() * 5;
                     for (let i = 0; i < starPoints; i++) {
-                    // ... (calculate vertexX, vertexY for outer point) ...
+                        const currentAngle = shapeStartAngle + (2 * i) * (Math.PI / starPoints);
+                        const vertexX = centerX + starOuterRadius * Math.cos(currentAngle);
+                        const vertexY = centerY + starOuterRadius * Math.sin(currentAngle);
                         const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
                         drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
                     }
