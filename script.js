@@ -13,6 +13,8 @@ const primaryColorPicker = document.getElementById('primaryColorPicker');
 const secondaryColorPicker = document.getElementById('secondaryColorPicker');
 const glowToggle = document.getElementById('glowToggle');
 const lineStyleSelect = document.getElementById('lineStyleSelect');
+const paletteSelect = document.getElementById('paletteSelect');
+
 
 // --- Check if elements were found (Check ALL essential ones) ---
 if (!canvas) console.error("ERROR: Canvas element not found!");
@@ -29,7 +31,21 @@ if (!primaryColorPicker) console.error("ERROR: Primary Color Picker not found!")
 if (!secondaryColorPicker) console.error("ERROR: Secondary Color Picker not found!");
 if (!glowToggle) console.error("ERROR: Glow Toggle checkbox not found!");
 if (!lineStyleSelect) console.error("ERROR: Line Style Select not found!");
+if (!paletteSelect) console.error("ERROR: Palette Select not found!");
 
+
+// --- Color Palettes ---
+const colorPalettes = {
+    'custom': { name: 'Custom', primary: null, secondary: null }, // Placeholder for manual selection
+    'default': { name: 'Default', primary: '#FFFFFF', secondary: '#888888' },
+    'fire': { name: 'Fire', primary: '#FFA500', secondary: '#FF4500' }, // Orange, OrangeRed
+    'ice': { name: 'Ice', primary: '#ADD8E6', secondary: '#00BFFF' }, // LightBlue, DeepSkyBlue
+    'forest': { name: 'Forest', primary: '#90EE90', secondary: '#228B22' }, // LightGreen, ForestGreen
+    'arcane': { name: 'Arcane', primary: '#DA70D6', secondary: '#8A2BE2' }, // Orchid, BlueViolet
+    'shadow': { name: 'Shadow', primary: '#A9A9A9', secondary: '#696969' }, // DarkGray, DimGray
+    'gold': { name: 'Gold', primary: '#FFD700', secondary: '#B8860B' }, // Gold, DarkGoldenrod
+    'mono': { name: 'Monochrome', primary: '#FFFFFF', secondary: '#CCCCCC' }, // White, LightGray
+};
 
 // --- Thematic Symbol Sets ---
 
@@ -266,6 +282,34 @@ function resetGlow() {
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
+}
+
+function populatePaletteOptions() {
+    if (!paletteSelect) return; // Don't run if element wasn't found
+
+    // Clear existing options except the first 'Custom' one (optional)
+    // while (paletteSelect.options.length > 1) {
+    //     paletteSelect.remove(1);
+    // }
+
+    for (const key in colorPalettes) {
+         // Skip adding 'custom' again if it's already there
+         if (key === 'custom' && paletteSelect.querySelector('option[value="custom"]')) {
+            continue;
+         }
+         const palette = colorPalettes[key];
+         const option = document.createElement('option');
+         option.value = key;
+         option.textContent = palette.name;
+         paletteSelect.appendChild(option);
+    }
+     // Set initial selection based on picker defaults? Or just default to 'custom'/'default'.
+     // Let's explicitly set it to 'default' initially.
+     paletteSelect.value = 'default';
+     // And also update the pickers to match the initial default palette
+     if (primaryColorPicker) primaryColorPicker.value = colorPalettes['default'].primary;
+     if (secondaryColorPicker) secondaryColorPicker.value = colorPalettes['default'].secondary;
+
 }
 
 function createCircleDefinition() {
@@ -601,18 +645,23 @@ if (lineStyleSelect) {
 // VISUAL Controls: ONLY redraw using EXISTING definition
 if (primaryColorPicker) {
     primaryColorPicker.addEventListener('input', () => {
-        // NO createCircleDefinition() here!
-        generateMagicCircle(); // Only redraw
+        console.log(`Primary color changed to: ${primaryColorPicker.value}`);
+        if (paletteSelect) paletteSelect.value = 'custom'; // <<< Set palette to Custom
+        generateMagicCircle();
     });
-    console.log("Primary color picker listener attached.");
+    // console.log("Primary color picker listener attached.");
 }
+
+// Modify existing listener for Secondary Color Picker
 if (secondaryColorPicker) {
     secondaryColorPicker.addEventListener('input', () => {
-        // NO createCircleDefinition() here!
-        generateMagicCircle(); // Only redraw
+        console.log(`Secondary color changed to: ${secondaryColorPicker.value}`);
+         if (paletteSelect) paletteSelect.value = 'custom'; // <<< Set palette to Custom
+        generateMagicCircle();
     });
-    console.log("Secondary color picker listener attached.");
+     // console.log("Secondary color picker listener attached.");
 }
+
 if (glowToggle) {
     glowToggle.addEventListener('change', () => {
         // NO createCircleDefinition() here!
@@ -621,10 +670,31 @@ if (glowToggle) {
     console.log("Glow toggle listener attached.");
 }
 
+if (paletteSelect && primaryColorPicker && secondaryColorPicker) {
+    paletteSelect.addEventListener('change', () => {
+        const selectedKey = paletteSelect.value;
+        console.log(`Palette changed to: ${selectedKey}`);
+
+        if (selectedKey !== 'custom' && colorPalettes[selectedKey]) {
+            const palette = colorPalettes[selectedKey];
+            // Update the color picker input values
+            primaryColorPicker.value = palette.primary;
+            secondaryColorPicker.value = palette.secondary;
+            // Redraw the circle with the new colors
+            generateMagicCircle();
+        }
+        // If 'custom' is selected, we don't change the pickers,
+        // the user will change them manually.
+    });
+    console.log("Palette select listener attached.");
+} else {
+    console.error("Could not attach listener to Palette select or color pickers missing!");
+}
 
 // --- Initial Setup ---
 console.log("Running initial setup...");
-
+// Populate Palette Dropdown FIRST
+populatePaletteOptions(); // <<< CALL THE NEW FUNCTION
 // Set initial text for sliders
 if (numRingsSlider && numRingsValueSpan) { /* ... set text ... */ }
 if (numSymbolsSlider && numSymbolsValueSpan) { /* ... set text ... */ }
