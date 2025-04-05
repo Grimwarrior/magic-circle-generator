@@ -404,7 +404,6 @@ function generateMagicCircle() {
                 if (Math.random() < 0.7) { // Check the random chance FIRST
                     console.log(`Placing symbols on ${starPoints} star outer vertices`);
 
-                    const angleStep = (Math.PI * 2) / starPoints;
                     const symbolSize = calculateSymbolSize();
                     for (let i = 0; i < starPoints; i++) {
                         const currentAngle = shapeStartAngle + (2 * i) * (Math.PI / starPoints);
