@@ -310,6 +310,7 @@ function generateMagicCircle() {
     // Inside generateMagicCircle function, near the top
     let drawnShapeInfo = null; // To store details of the polygon/star drawn
     let shouldDrawRandomSymbolRing = true; // Keep this flag too
+    let didDrawConnectingLines = false; // NEW flag
 
     const maxRadius = Math.min(width, height) / 2 - 15;
     const baseLineWidth = 1.5;
@@ -423,7 +424,8 @@ function generateMagicCircle() {
     // --- Draw Connecting Lines (Vertices to Outer Circle, 60% chance) ---
     if (drawnShapeInfo && Math.random() < 0.6 && numOuterCircles > 0) { // Check if shape info exists, random chance, and circles exist
         console.log("Drawing connecting lines: vertices to outer circle");
-
+        didDrawConnectingLines = true; // <<< SET THE FLAG HERE
+        
         const targetCircleRadius = maxRadius; // Use the largest radius
         const connectColor = secondaryColor; // Or primaryColor, or a new one
         const connectLineWidth = 0.75; // Typically thin
@@ -472,7 +474,7 @@ function generateMagicCircle() {
         const numSymbols = Math.floor(Math.random() * 7) + 4; // 4 to 10 symbols
         const symbolStartAngle = Math.random() * Math.PI * 2; // Give symbols their own random start angle
 
-        if (symbolRadius > 0 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
+        if (symbolRadius > 5 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
             console.log(`Drawing ${numSymbols} symbols at random radius ${symbolRadius.toFixed(1)}`);
             for (let i = 0; i < numSymbols; i++) {
                 const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i; // Distribute evenly
@@ -492,22 +494,26 @@ function generateMagicCircle() {
     } // <--- END of the conditional block
 
     // Add some radial lines
-    const numLines = Math.random() < 0.5 ? 8 : 12;
-    const lineStartRadius = maxRadius * 0.2;
-    const lineEndRadius = maxRadius;
+    if (!didDrawConnectingLines) { // <<< CHECK THE FLAG HERE
+        const numLines = Math.random() < 0.5 ? 6 : 9;
+        const lineStartRadius = maxRadius * 0.2;
+        const lineEndRadius = maxRadius;
 
-    if (lineStartRadius < lineEndRadius && numOuterCircles > 0) { // Only draw lines if circles exist
-        console.log(`Drawing ${numLines} radial lines`);
-        for (let i = 0; i < numLines; i++) {
-            const angle = (Math.PI * 2 / numLines) * i;
-            const lineStartX = centerX + lineStartRadius * Math.cos(angle);
-            const lineStartY = centerY + lineStartRadius * Math.sin(angle);
-            const lineEndX = centerX + lineEndRadius * Math.cos(angle);
-            const lineEndY = centerY + lineEndRadius * Math.sin(angle);
-            drawLine(lineStartX, lineStartY, lineEndX, lineEndY, secondaryColor, 1);
+        if (lineStartRadius < lineEndRadius && numOuterCircles > 0) { // Only draw lines if circles exist
+            console.log(`Drawing ${numLines} radial lines`);
+            for (let i = 0; i < numLines; i++) {
+                const angle = (Math.PI * 2 / numLines) * i;
+                const lineStartX = centerX + lineStartRadius * Math.cos(angle);
+                const lineStartY = centerY + lineStartRadius * Math.sin(angle);
+                const lineEndX = centerX + lineEndRadius * Math.cos(angle);
+                const lineEndY = centerY + lineEndRadius * Math.sin(angle);
+                drawLine(lineStartX, lineStartY, lineEndX, lineEndY, secondaryColor, 0.75);
+            }
+        } else {
+            console.log("Skipping radial lines (circle count too low)");
         }
-    } else {
-         console.log("Skipping radial lines (circle count too low)");
+    } else { // Optional: log why radial lines were skipped
+        console.log("Skipping radial lines because connecting lines were drawn.");
     }
 
     console.log("--- generateMagicCircle END ---");
