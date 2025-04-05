@@ -283,7 +283,6 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
 // --- The Main Generation Function ---
 function generateMagicCircle() {
     console.log("--- generateMagicCircle START ---"); // Log start
-    let shouldDrawRandomSymbolRing = true; // Flag for random symbol ring
     // Check if slider exists *inside* the function too (belt and suspenders)
     if (!numCirclesSlider) {
         console.error("Slider not accessible inside generateMagicCircle!");
@@ -306,6 +305,9 @@ function generateMagicCircle() {
         // numOuterCircles = 3;
     }
 
+    // Inside generateMagicCircle function, near the top
+    let drawnShapeInfo = null; // To store details of the polygon/star drawn
+    let shouldDrawRandomSymbolRing = true; // Keep this flag too
 
     const maxRadius = Math.min(width, height) / 2 - 15;
     const baseLineWidth = 1.5;
@@ -344,6 +346,8 @@ function generateMagicCircle() {
             if (polyRadius > 5) {
                 console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
                 drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
+                // Store info about the polygon that was just drawn
+                drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // <<< ADD THIS LINE       
                 // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
                 if (Math.random() < 0.7) {
                     console.log(`Placing symbols on ${polySides} polygon vertices`);
@@ -375,6 +379,10 @@ function generateMagicCircle() {
             if (starOuterRadius > 5 && starInnerRadius > 0) {
                 console.log(`Drawing star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
                 drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
+
+                // Store info about the star that was just drawn
+                drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; 
+                
                 // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
                 if (Math.random() < 0.7) {
                     console.log(`Placing symbols on ${starPoints} star outer vertices`);
@@ -411,7 +419,49 @@ function generateMagicCircle() {
         console.log("Skipping inner shape: minCircleRadius too small");
     }
 
+    // --- Draw Connecting Lines (Vertices to Outer Circle, 60% chance) ---
+    if (drawnShapeInfo && Math.random() < 0.6 && numOuterCircles > 0) { // Check if shape info exists, random chance, and circles exist
+        console.log("Drawing connecting lines: vertices to outer circle");
 
+        const targetCircleRadius = maxRadius; // Use the largest radius
+        const connectColor = secondaryColor; // Or primaryColor, or a new one
+        const connectLineWidth = 0.75; // Typically thin
+
+        const { type, points, radius, angle } = drawnShapeInfo; // Get stored info
+        const isStar = (type === 'star');
+        const angleOffset = angle;
+
+        for (let i = 0; i < points; i++) {
+            let currentAngle;
+            let startRadius = radius; // This is polyRadius or starOuterRadius
+
+            if (isStar) {
+                // Angle for the *outer* point of the star
+                currentAngle = angleOffset + (2 * i) * (Math.PI / points);
+            } else {
+                // Angle for the polygon vertex
+                const angleStep = (Math.PI * 2) / points;
+                currentAngle = angleOffset + i * angleStep;
+            }
+
+            // Calculate start point (vertex of inner shape)
+            const startX = centerX + startRadius * Math.cos(currentAngle);
+            const startY = centerY + startRadius * Math.sin(currentAngle);
+
+            // Calculate end point (on the target outer circle at the same angle)
+            const endX = centerX + targetCircleRadius * Math.cos(currentAngle);
+            const endY = centerY + targetCircleRadius * Math.sin(currentAngle);
+
+            // Draw the line
+            drawLine(startX, startY, endX, endY, connectColor, connectLineWidth);
+        }
+    } else {
+        // Log why we skipped, checking each condition
+        if (!drawnShapeInfo) console.log("Skipping connecting lines: No inner shape info was stored.");
+        else if (numOuterCircles <= 0) console.log("Skipping connecting lines: No outer circles to connect to.");
+        else console.log("Skipping connecting lines: Random chance failed."); // Only remaining reason
+    }
+    // --- End Connecting Lines --- 
 
     // --- Place some symbols on a random ring ---
     if (shouldDrawRandomSymbolRing) { // <--- START of the conditional block
