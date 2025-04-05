@@ -12,6 +12,7 @@ const numSymbolsValueSpan = document.getElementById('numSymbolsValue');
 const primaryColorPicker = document.getElementById('primaryColorPicker');
 const secondaryColorPicker = document.getElementById('secondaryColorPicker');
 const glowToggle = document.getElementById('glowToggle');
+const lineStyleSelect = document.getElementById('lineStyleSelect');
 
 // --- Check if elements were found (Check ALL essential ones) ---
 if (!canvas) console.error("ERROR: Canvas element not found!");
@@ -27,7 +28,7 @@ if (!numSymbolsValueSpan) console.error("ERROR: Number of Symbols Value Span not
 if (!primaryColorPicker) console.error("ERROR: Primary Color Picker not found!");
 if (!secondaryColorPicker) console.error("ERROR: Secondary Color Picker not found!");
 if (!glowToggle) console.error("ERROR: Glow Toggle checkbox not found!");
-
+if (!lineStyleSelect) console.error("ERROR: Line Style Select not found!");
 
 
 // --- Thematic Symbol Sets ---
@@ -167,13 +168,27 @@ function drawPolygon(cx, cy, radius, sides, startAngle, color = 'white', lineWid
     ctx.stroke();
 }
 
-function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1) {
+function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1, style = 'solid') {
+    ctx.save(); // Save current context state (including line dash)
+
+    // Set the line dash pattern based on the style
+    if (style === 'dashed') {
+        ctx.setLineDash([5, 5]); // 5px line, 5px gap
+    } else if (style === 'dotted') {
+        ctx.setLineDash([1, 3]); // 1px dot, 3px gap (adjust as desired)
+    } else {
+        ctx.setLineDash([]); // Solid line
+    }
+
+    // Draw the line
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
+
+    ctx.restore(); // Restore the previous context state (resets line dash)
 }
 
 function drawSymbol(symbol, x, y, size = 20, color = 'white') {
@@ -385,23 +400,55 @@ function createCircleDefinition() {
 
     // --- Define Radial Lines ---
     let radialLines = [];
-    if (connectingLines.length === 0 && circles.length > 0) { // Only if connecting lines weren't drawn
-        const numLines = Math.random() < 0.5 ? 6 : 9;
+    if (connectingLines.length === 0 && circles.length > 0) {
         const lineStartRadius = maxRadius * 0.2;
-        const lineEndRadius = maxRadius;
+        const lineEndRadius = maxRadius; // Use outermost radius from definition
         const radialLineWidth = 0.75;
-
+    
         if (lineStartRadius < lineEndRadius) {
-            for (let i = 0; i < numLines; i++) {
-                const angle = (Math.PI * 2 / numLines) * i;
-                const startX = centerX + lineStartRadius * Math.cos(angle);
-                const startY = centerY + lineStartRadius * Math.sin(angle);
-                const endX = centerX + lineEndRadius * Math.cos(angle);
-                const endY = centerY + lineEndRadius * Math.sin(angle);
-                radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
+            // Check if an INNER SHAPE exists in the definition to align to
+            if (currentCircleDef && currentCircleDef.innerShape) { // Check the definition being built!
+                const shape = currentCircleDef.innerShape; // Use the shape JUST defined
+                const points = shape.points;
+                const angleOffset = shape.angle;
+                const isStar = (shape.type === 'star');
+                console.log(`Defining ${points} radial lines aligned with vertices.`);
+    
+                for (let i = 0; i < points; i++) {
+                    let vertexAngle;
+                    if (isStar) {
+                        vertexAngle = angleOffset + (2 * i) * (Math.PI / points); // Angle to outer point
+                    } else { // polygon
+                        vertexAngle = angleOffset + i * (Math.PI * 2 / points);
+                    }
+                    // Calculate points based on vertexAngle
+                    const startX = centerX + lineStartRadius * Math.cos(vertexAngle);
+                    const startY = centerY + lineStartRadius * Math.sin(vertexAngle);
+                    const endX = centerX + lineEndRadius * Math.cos(vertexAngle);
+                    const endY = centerY + lineEndRadius * Math.sin(vertexAngle);
+                    radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
+                }
+            } else {
+                // No inner shape - Define evenly spaced lines
+                const numLines = Math.random() < 0.5 ? 6 : 9;
+                console.log(`Defining ${numLines} evenly spaced radial lines.`);
+                for (let i = 0; i < numLines; i++) {
+                    const angle = (Math.PI * 2 / numLines) * i;
+                    const startX = centerX + lineStartRadius * Math.cos(angle);
+                    const startY = centerY + lineStartRadius * Math.sin(angle);
+                    const endX = centerX + lineEndRadius * Math.cos(angle);
+                    const endY = centerY + lineEndRadius * Math.sin(angle);
+                    radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
+                }
             }
+        } else {
+            console.log("Skipping radial line definition: start/end radius invalid.");
         }
+    } else {
+         if (connectingLines.length > 0) console.log("Skipping radial line definition: Connecting lines already defined.");
+         else console.log("Skipping radial line definition: No outer circles defined.");
     }
+    // --- End Radial Lines Definition ---
 
     // --- Store the definition ---
     currentCircleDef = {
@@ -429,6 +476,7 @@ function generateMagicCircle() {
     const primaryColor = primaryColorPicker.value;
     const secondaryColor = secondaryColorPicker.value;
     const enableGlow = glowToggle.checked;
+    const selectedLineStyle = lineStyleSelect.value; // <<< READ LINE STYLE
     const glowAmount = 10;
 
     // Assign colors based on definition (can be customized more later)
@@ -466,7 +514,7 @@ function generateMagicCircle() {
      // --- Draw Connecting Lines ---
      currentCircleDef.connectingLines.forEach(line => {
          if (enableGlow) applyGlow(connectColor, glowAmount * 0.5);
-         drawLine(line.x1, line.y1, line.x2, line.y2, connectColor, line.lineWidth);
+         drawLine(line.x1, line.y1, line.x2, line.y2, connectColor, line.lineWidth, selectedLineStyle); // <<< ADDED STYLE
          if (enableGlow) resetGlow();
      });
 
@@ -487,7 +535,7 @@ function generateMagicCircle() {
     // --- Draw Radial Lines ---
     currentCircleDef.radialLines.forEach(line => {
         if (enableGlow) applyGlow(radialLineColor, glowAmount * 0.5);
-        drawLine(line.x1, line.y1, line.x2, line.y2, radialLineColor, line.lineWidth);
+        drawLine(line.x1, line.y1, line.x2, line.y2, radialLineColor, line.lineWidth, selectedLineStyle); // <<< ADDED STYLE
         if (enableGlow) resetGlow();
     });
 
@@ -540,6 +588,15 @@ if (numSymbolsSlider && numSymbolsValueSpan) {
     console.log("Symbols slider listener attached.");
 }
 
+if (lineStyleSelect) {
+    lineStyleSelect.addEventListener('change', () => {
+        console.log(`Line style changed to: ${lineStyleSelect.value}`);
+        generateMagicCircle(); // Only redraw, don't create new definition
+    });
+    console.log("Line style select listener attached.");
+} else {
+    console.error("Could not attach listener to Line Style select!");
+}
 
 // VISUAL Controls: ONLY redraw using EXISTING definition
 if (primaryColorPicker) {
