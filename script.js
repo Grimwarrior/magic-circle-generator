@@ -9,6 +9,8 @@ const symbolSetSelect = document.getElementById('symbolSetSelect');
 const innerShapeSelect = document.getElementById('innerShapeSelect');
 const numSymbolsSlider = document.getElementById('numSymbolsSlider');
 const numSymbolsValueSpan = document.getElementById('numSymbolsValue');
+const primaryColorPicker = document.getElementById('primaryColorPicker');
+const secondaryColorPicker = document.getElementById('secondaryColorPicker');
 
 // --- Check if elements were found (Check ALL essential ones) ---
 if (!canvas) console.error("ERROR: Canvas element not found!");
@@ -21,6 +23,8 @@ if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found
 if (!innerShapeSelect) console.error("ERROR: Inner Shape Select dropdown not found!");
 if (!numSymbolsSlider) console.error("ERROR: Number of Symbols Slider not found!");
 if (!numSymbolsValueSpan) console.error("ERROR: Number of Symbols Value Span not found!");
+if (!primaryColorPicker) console.error("ERROR: Primary Color Picker not found!");
+if (!secondaryColorPicker) console.error("ERROR: Secondary Color Picker not found!");
 
 // --- Thematic Symbol Sets ---
 
@@ -256,15 +260,15 @@ function generateMagicCircle() {
     const calculateSymbolSize = () => 18 + Math.random() * 8; // Base 18px, up to +8px randomness
     const maxRadius = Math.min(width, height) / 2 - 15;
     const baseLineWidth = 1.5;
-    const primaryColor = `hsl(${Math.random() * 360}, 80%, 70%)`;
-    const secondaryColor = 'rgba(200, 200, 200, 0.7)';
+    const primaryColor = primaryColorPicker.value; // <<< READ FROM PICKER
+    const secondaryColor = secondaryColorPicker.value; // <<< READ FROM PICKER
     const symbolColor = primaryColor;
 
     // Inside generateMagicCircle, after reading slider value, before drawing loops:
     const selectedSetKey = symbolSetSelect.value;
     currentSymbols = symbolSets[selectedSetKey] || symbolSets['geometric']; // Use selected set, fallback to geometric if key is invalid
     console.log(`Using symbol set: ${selectedSetKey}`); // Log which set is active
-
+    console.log(`Using Primary: ${primaryColor}, Secondary: ${secondaryColor}`); // Log selected colors
     // 3. Draw Base Elements
 
     // Draw Outer Circles (Deterministic Radius)
@@ -513,7 +517,28 @@ if (numSymbolsSlider && numSymbolsValueSpan) {
      console.error("Could not attach listener to Symbols slider/span!");
 }
 
+// Listener for Primary Color Picker
+if (primaryColorPicker) {
+    primaryColorPicker.addEventListener('input', () => {
+        // No text span to update, just regenerate
+        console.log(`Primary color changed to: ${primaryColorPicker.value}`);
+        generateMagicCircle();
+    });
+    console.log("Primary color picker listener attached.");
+} else {
+     console.error("Could not attach listener to Primary color picker!");
+}
 
+// Listener for Secondary Color Picker
+if (secondaryColorPicker) {
+    secondaryColorPicker.addEventListener('input', () => {
+        console.log(`Secondary color changed to: ${secondaryColorPicker.value}`);
+        generateMagicCircle();
+    });
+     console.log("Secondary color picker listener attached.");
+} else {
+     console.error("Could not attach listener to Secondary color picker!");
+}
 
 // --- Initial Setup (AT THE VERY END) ---
 console.log("Running initial setup...");
