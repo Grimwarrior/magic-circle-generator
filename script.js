@@ -114,7 +114,7 @@ const symbolSets = {
 // let currentSymbols = symbolSets['geometric']; // Start with geometric
 // Near top where arrays are defined:
 let currentSymbols; // Declare it, but don't assign a default here anymore.
-
+let currentCircleDef = null; // Will hold the definition of the current circle
 // --- Check if elements were found ---
 // Add these checks right after selecting elements!
 if (!canvas) console.error("ERROR: Canvas element not found!");
@@ -252,369 +252,330 @@ function resetGlow() {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 }
-// --- The Main Generation Function ---
-function generateMagicCircle() {
-    console.log("--- generateMagicCircle START ---"); // Log start
 
-    // *** ENSURE ALL NEEDED ELEMENTS EXIST before proceeding ***
-    if (!ctx || !numRingsSlider || !symbolSetSelect || !innerShapeSelect || !numSymbolsSlider) {
-        console.error("Cannot generate circle: Essential elements missing!");
-        return; // Stop if core elements aren't available
-    }
+function createCircleDefinition() {
+    console.log("--- Creating new circle definition ---");
 
-    // 1. Clear the canvas
-    ctx.clearRect(0, 0, width, height);
-
-    // 2. Read Controls & Define Parameters
-    // **** THIS IS THE CRUCIAL LINE ****
+    // Read STRUCTURAL controls
     const numOuterCircles = parseInt(numRingsSlider.value);
-    // **** **** **** **** **** **** ****
+    const selectedShapeValue = innerShapeSelect.value;
+    const selectedSetKey = symbolSetSelect.value;
+    const numRingSymbols = parseInt(numSymbolsSlider.value);
 
-    console.log(`Slider value read: ${numRingsSlider.value}, Parsed value: ${numOuterCircles}`); // Detailed log
-
-    if (isNaN(numOuterCircles)) {
-        console.error("ERROR: numOuterCircles is NaN! Slider value might be invalid.");
-        // Optionally default to a value if parsing fails
-        // numOuterCircles = 3;
-    }
-
-    // Inside generateMagicCircle function, near the top
-    let drawnShapeInfo = null; // To store details of the polygon/star drawn
-    let didDrawConnectingLines = false; // NEW flag
-
-    
-    const calculateSymbolSize = () => 18 + Math.random() * 8; // Base 18px, up to +8px randomness
+    // Basic parameters (could be made controllable later)
     const maxRadius = Math.min(width, height) / 2 - 15;
     const baseLineWidth = 1.5;
-    const primaryColor = primaryColorPicker.value; // <<< READ FROM PICKER
-    const secondaryColor = secondaryColorPicker.value; // <<< READ FROM PICKER
-    const symbolColor = primaryColor;
-    const connectColor = secondaryColor; // <<< Use secondary for connecting lines
-    const radialLineColor = secondaryColor; // <<< Use secondary for radial lines (or primaryColor if you prefer)
-    const enableGlow = glowToggle.checked; // <<< READ CHECKBOX STATE
-    const glowAmount = 10; // Adjust glow intensity here
-    console.log(`Using Primary: ${primaryColor}, Secondary: ${secondaryColor}, Connect: ${connectColor}, Radial: ${radialLineColor}`);
-    // Inside generateMagicCircle, after reading slider value, before drawing loops:
-    const selectedSetKey = symbolSetSelect.value;
-    currentSymbols = symbolSets[selectedSetKey] || symbolSets['geometric']; // Use selected set, fallback to geometric if key is invalid
-    console.log(`Using symbol set: ${selectedSetKey}`); // Log which set is active
-    console.log(`Using Primary: ${primaryColor}, Secondary: ${secondaryColor}`); // Log selected colors
-    // 3. Draw Base Elements
-
-    // Draw Outer Circles (Deterministic Radius)
     const circleSpacing = 0.15;
-    console.log(`Attempting to draw ${numOuterCircles} circles...`);
+
+    // --- Define Outer Circles ---
+    const circles = [];
     for (let i = 0; i < numOuterCircles; i++) {
-        const radius = maxRadius * (1 - i * circleSpacing);
+        // Make radius slightly random IF desired, otherwise deterministic
+        // const randomFactor = 0.95 + Math.random() * 0.1; // Example randomness
+        // const radius = maxRadius * (1 - i * circleSpacing) * randomFactor;
+        const radius = maxRadius * (1 - i * circleSpacing); // Deterministic
         const lineWidth = Math.max(1, baseLineWidth - i * 0.2);
-        console.log(`Drawing circle ${i}: radius ${radius.toFixed(1)}`);
-        if (enableGlow) applyGlow(primaryColor, glowAmount); // Apply glow before drawing
-        drawCircle(centerX, centerY, radius, primaryColor, lineWidth);
-        if (enableGlow) resetGlow(); // Reset glow after drawing
-    }
-
-    // --- Draw ONE inner shape (Polygon or Star) ---
-    const selectedShape = innerShapeSelect.value; // Read the dropdown value
-    console.log("Selected inner shape:", selectedShape);
-    let shapeInfo = null; // Will hold {type: 'polygon'/'star', points: N} or null
-
-    if (selectedShape !== 'none' && selectedShape !== 'random') {
-        const parts = selectedShape.split('_'); // e.g., ['polygon', '5']
-        if (parts.length === 2) {
-            shapeInfo = { type: parts[0], points: parseInt(parts[1]) };
-        }
-    } else if (selectedShape === 'random') {
-        // Keep the old random logic if 'random' is selected
-        if (Math.random() < 0.5) { // 50% chance Polygon
-             shapeInfo = { type: 'polygon', points: Math.floor(Math.random() * 4) + 3 }; // 3-6 sides
-        } else { // 50% chance Star
-             shapeInfo = { type: 'star', points: Math.floor(Math.random() * 4) + 4 }; // 4-7 points
+        if (radius > 0) {
+             circles.push({ radius: radius, lineWidth: lineWidth });
         }
     }
-    // If selectedShape is 'none', shapeInfo remains null
 
-    // Now, use shapeInfo to decide what to draw
-    const shapeStartAngle = Math.random() * Math.PI * 2; // Keep random rotation
-    const shapeColor = secondaryColor;
-    const shapeLineWidth = baseLineWidth;
-    const minCircleRadius = numOuterCircles > 0 ? maxRadius * (1 - (numOuterCircles - 1) * circleSpacing) : maxRadius * 0.5;
-
-    // Make sure drawnShapeInfo is reset from previous run
-    drawnShapeInfo = null; // Reset here before potentially drawing
-
-    if (shapeInfo && minCircleRadius > 10) { // Check if shapeInfo exists and there's space
-        if (shapeInfo.type === 'polygon') {
-            const polySides = shapeInfo.points;
-            const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4);
-            if (polyRadius > 5) {
-                console.log(`Drawing selected polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
-                if (enableGlow) applyGlow(shapeColor, glowAmount);
-                drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
-                if (enableGlow) resetGlow();
-                drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // Store info
-
-                // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
-                if (Math.random() < 0.7) { // Check the random chance FIRST
-                    console.log(`Placing symbols on ${polySides} polygon vertices`);
-
-                    const angleStep = (Math.PI * 2) / polySides;
-                    const symbolSize = calculateSymbolSize();
-                    for (let i = 0; i < polySides; i++) {
-                        const currentAngle = shapeStartAngle + i * angleStep;
-                        const vertexX = centerX + polyRadius * Math.cos(currentAngle);
-                        const vertexY = centerY + polyRadius * Math.sin(currentAngle);
-                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
-                        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7); // Maybe slightly less glow for symbols
-                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
-                        if (enableGlow) resetGlow();
-                    }
-                } // <<< END of the 70% chance block
-                // --- End symbol placement on vertices ---
-                
-            } else { /* log skip */ console.log("Skipping polygon: calculated radius too small"); }
-        } else if (shapeInfo.type === 'star') {
-            const starPoints = shapeInfo.points;
-            const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4);
-            const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2);
-            if (starOuterRadius > 5 && starInnerRadius > 0) {
-                console.log(`Drawing selected star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
-                if (enableGlow) applyGlow(shapeColor, glowAmount);
-                drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
-                if (enableGlow) resetGlow();
-                drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; // Store info
-
-                // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
-                if (Math.random() < 0.7) { // Check the random chance FIRST
-                    console.log(`Placing symbols on ${starPoints} star outer vertices`);
-
-                    const symbolSize = calculateSymbolSize();
-                    for (let i = 0; i < starPoints; i++) {
-                        const currentAngle = shapeStartAngle + (2 * i) * (Math.PI / starPoints);
-                        const vertexX = centerX + starOuterRadius * Math.cos(currentAngle);
-                        const vertexY = centerY + starOuterRadius * Math.sin(currentAngle);
-                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
-                        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
-                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
-                        if (enableGlow) resetGlow();
-                    }
-                } // <<< END of the 70% chance block
-                // --- End symbol placement on vertices ---
-
-            } else { /* log skip */ console.log("Skipping star: calculated radii invalid"); }
-        }
-    } else {
-        if (!shapeInfo) console.log("Skipping inner shape: 'None' selected or invalid value.");
-        else console.log("Skipping inner shape: minCircleRadius too small.");
+    // --- Define Inner Shape ---
+    let innerShape = null;
+    let shapeInfo = null; // Determine type and points based on dropdown
+    if (selectedShapeValue !== 'none' && selectedShapeValue !== 'random') {
+        const parts = selectedShapeValue.split('_');
+        if (parts.length === 2) shapeInfo = { type: parts[0], points: parseInt(parts[1]) };
+    } else if (selectedShapeValue === 'random') {
+        if (Math.random() < 0.5) shapeInfo = { type: 'polygon', points: Math.floor(Math.random() * 4) + 3 };
+        else shapeInfo = { type: 'star', points: Math.floor(Math.random() * 4) + 4 };
     }
-    // --- END OF SHAPE DRAWING BLOCK ---
 
-    // --- Draw Connecting Lines (Vertices to Outer Circle, 60% chance) ---
-    if (drawnShapeInfo && Math.random() < 0.6 && numOuterCircles > 0) { // Check if shape info exists, random chance, and circles exist
-        console.log("Drawing connecting lines: vertices to outer circle");
-        didDrawConnectingLines = true; // <<< SET THE FLAG HERE
-        
-        const targetCircleRadius = maxRadius; // Use the largest radius
-        const connectColor = secondaryColor; // Or primaryColor, or a new one
-        const connectLineWidth = 0.75; // Typically thin
+    if (shapeInfo) {
+        const minCircleRadius = circles.length > 0 ? circles[circles.length - 1].radius : maxRadius * 0.5;
+        const shapeStartAngle = Math.random() * Math.PI * 2;
+        const shapeLineWidth = baseLineWidth;
 
-        const { type, points, radius, angle } = drawnShapeInfo; // Get stored info
-        const isStar = (type === 'star');
-        const angleOffset = angle;
+        if (minCircleRadius > 10) {
+            if (shapeInfo.type === 'polygon') {
+                const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4);
+                if (polyRadius > 5) {
+                    innerShape = { type: 'polygon', points: shapeInfo.points, radius: polyRadius, angle: shapeStartAngle, lineWidth: shapeLineWidth };
+                }
+            } else if (shapeInfo.type === 'star') {
+                const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4);
+                const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2);
+                if (starOuterRadius > 5 && starInnerRadius > 0) {
+                    innerShape = { type: 'star', points: shapeInfo.points, outerRadius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle, lineWidth: shapeLineWidth };
+                }
+            }
+        }
+    }
+
+    // --- Define Vertex Symbols ---
+    let vertexSymbols = [];
+    if (innerShape && Math.random() < 0.7) { // 70% chance
+        const points = innerShape.points;
+        const angleOffset = innerShape.angle;
+        const vertexSymbolSize = () => 18 + Math.random() * 8; // Keep size random per symbol for now
+        const symbolSet = symbolSets[selectedSetKey] || symbolSets['geometric'];
 
         for (let i = 0; i < points; i++) {
-            let currentAngle;
-            let startRadius = radius; // This is polyRadius or starOuterRadius
+             let currentAngle, vertexRadius;
+             if (innerShape.type === 'star') {
+                 vertexRadius = innerShape.outerRadius;
+                 currentAngle = angleOffset + (2 * i) * (Math.PI / points);
+             } else { // polygon
+                 vertexRadius = innerShape.radius;
+                 currentAngle = angleOffset + i * (Math.PI * 2 / points);
+             }
+             const x = centerX + vertexRadius * Math.cos(currentAngle);
+             const y = centerY + vertexRadius * Math.sin(currentAngle);
+             const symbol = symbolSet[Math.floor(Math.random() * symbolSet.length)];
+             vertexSymbols.push({ symbol: symbol, x: x, y: y, size: vertexSymbolSize() });
+        }
+    }
 
-            if (isStar) {
-                // Angle for the *outer* point of the star
-                currentAngle = angleOffset + (2 * i) * (Math.PI / points);
-            } else {
-                // Angle for the polygon vertex
-                const angleStep = (Math.PI * 2) / points;
-                currentAngle = angleOffset + i * angleStep;
+    // --- Define Ring Symbols ---
+    let ringSymbols = [];
+    // Only generate ring symbols if vertex symbols were NOT generated
+    if (vertexSymbols.length === 0 && numRingSymbols > 0 && circles.length > 0) {
+        const symbolRadiusFactor = 0.6 + Math.random() * 0.25;
+        const symbolRadius = maxRadius * symbolRadiusFactor;
+        const symbolStartAngle = Math.random() * Math.PI * 2;
+        const symbolSet = symbolSets[selectedSetKey] || symbolSets['geometric'];
+        const ringSymbolSize = () => 18 + Math.random() * 8;
+
+        if (symbolRadius > 5) {
+            for (let i = 0; i < numRingSymbols; i++) {
+                const angle = symbolStartAngle + (Math.PI * 2 / numRingSymbols) * i;
+                const x = centerX + symbolRadius * Math.cos(angle);
+                const y = centerY + symbolRadius * Math.sin(angle);
+                const symbol = symbolSet[Math.floor(Math.random() * symbolSet.length)];
+                ringSymbols.push({ symbol: symbol, x: x, y: y, size: ringSymbolSize() });
             }
-
-            // Calculate start point (vertex of inner shape)
-            const startX = centerX + startRadius * Math.cos(currentAngle);
-            const startY = centerY + startRadius * Math.sin(currentAngle);
-
-            // Calculate end point (on the target outer circle at the same angle)
-            const endX = centerX + targetCircleRadius * Math.cos(currentAngle);
-            const endY = centerY + targetCircleRadius * Math.sin(currentAngle);
-
-            // Draw the line
-            if (enableGlow) applyGlow(connectColor, glowAmount * 0.5); // Less glow for thin lines
-            drawLine(startX, startY, endX, endY, connectColor, connectLineWidth);
-            if (enableGlow) resetGlow();
         }
-    } else {
-        // Log why we skipped, checking each condition
-        if (!drawnShapeInfo) console.log("Skipping connecting lines: No inner shape info was stored.");
-        else if (numOuterCircles <= 0) console.log("Skipping connecting lines: No outer circles to connect to.");
-        else console.log("Skipping connecting lines: Random chance failed."); // Only remaining reason
-    }
-    // --- End Connecting Lines --- 
-
-    // --- Place some symbols on a random ring ---
-    // Make symbol ring radius relative to maxRadius, ensure it's inside the outermost circle
-    const symbolRadiusFactor = 0.6 + Math.random() * 0.25; // Place symbols between 60% and 85% of maxRadius
-    const symbolRadius = maxRadius * symbolRadiusFactor;
-    const numSymbols = parseInt(numSymbolsSlider.value); // <<< USE SLIDER VALUE
-    const symbolStartAngle = Math.random() * Math.PI * 2; // Give symbols their own random start angle
-
-    if (numSymbols > 0 && symbolRadius > 5 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
-        console.log(`Drawing ${numSymbols} symbols at random radius ${symbolRadius.toFixed(1)}`);
-        for (let i = 0; i < numSymbols; i++) {
-            const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i; // Distribute evenly
-            const symX = centerX + symbolRadius * Math.cos(angle);
-            const symY = centerY + symbolRadius * Math.sin(angle);
-            // const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]; // OLD
-            const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)]; // NEW
-            // Make symbol size slightly random too
-            const symbolSize = calculateSymbolSize();
-            if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
-             drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
-             if (enableGlow) resetGlow();
-        }
-    } else {
-        console.log("Skipping random symbols (count is 0, or radius/circle count too low)");
     }
 
 
-    // Add some radial lines
-    if (!didDrawConnectingLines) { // <<< CHECK THE FLAG HERE
+    // --- Define Connecting Lines ---
+    let connectingLines = [];
+    if (innerShape && Math.random() < 0.6 && circles.length > 0) {
+        const targetRadius = circles[0].radius; // Connect to outermost circle
+        const points = innerShape.points;
+        const angleOffset = innerShape.angle;
+        const connectLineWidth = 0.75;
+
+         for (let i = 0; i < points; i++) {
+             let currentAngle, startRadius;
+             if (innerShape.type === 'star') {
+                 startRadius = innerShape.outerRadius;
+                 currentAngle = angleOffset + (2 * i) * (Math.PI / points);
+             } else {
+                 startRadius = innerShape.radius;
+                 currentAngle = angleOffset + i * (Math.PI * 2 / points);
+             }
+             const startX = centerX + startRadius * Math.cos(currentAngle);
+             const startY = centerY + startRadius * Math.sin(currentAngle);
+             const endX = centerX + targetRadius * Math.cos(currentAngle);
+             const endY = centerY + targetRadius * Math.sin(currentAngle);
+             connectingLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: connectLineWidth });
+         }
+    }
+
+    // --- Define Radial Lines ---
+    let radialLines = [];
+    if (connectingLines.length === 0 && circles.length > 0) { // Only if connecting lines weren't drawn
         const numLines = Math.random() < 0.5 ? 6 : 9;
         const lineStartRadius = maxRadius * 0.2;
         const lineEndRadius = maxRadius;
+        const radialLineWidth = 0.75;
 
-        if (lineStartRadius < lineEndRadius && numOuterCircles > 0) { // Only draw lines if circles exist
-            console.log(`Drawing ${numLines} radial lines`);
+        if (lineStartRadius < lineEndRadius) {
             for (let i = 0; i < numLines; i++) {
                 const angle = (Math.PI * 2 / numLines) * i;
-                const lineStartX = centerX + lineStartRadius * Math.cos(angle);
-                const lineStartY = centerY + lineStartRadius * Math.sin(angle);
-                const lineEndX = centerX + lineEndRadius * Math.cos(angle);
-                const lineEndY = centerY + lineEndRadius * Math.sin(angle);
-                if (enableGlow) applyGlow(radialLineColor, glowAmount * 0.5);
-                drawLine(lineStartX, lineStartY, lineEndX, lineEndY, radialLineColor, 0.75);
-                if (enableGlow) resetGlow();
+                const startX = centerX + lineStartRadius * Math.cos(angle);
+                const startY = centerY + lineStartRadius * Math.sin(angle);
+                const endX = centerX + lineEndRadius * Math.cos(angle);
+                const endY = centerY + lineEndRadius * Math.sin(angle);
+                radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
             }
-        } else {
-            console.log("Skipping radial lines (circle count too low)");
         }
-    } else { // Optional: log why radial lines were skipped
-        console.log("Skipping radial lines because connecting lines were drawn.");
     }
 
-    console.log("--- generateMagicCircle END ---");
+    // --- Store the definition ---
+    currentCircleDef = {
+        circles: circles,
+        innerShape: innerShape,
+        vertexSymbols: vertexSymbols,
+        ringSymbols: ringSymbols,
+        connectingLines: connectingLines,
+        radialLines: radialLines,
+        symbolSetKey: selectedSetKey // Store which set was used
+        // Store other non-random parameters if needed later
+    };
+
+    console.log("New circle definition created:", currentCircleDef);
 }
+
+// --- The Main Generation Function ---
+function generateMagicCircle() {
+    console.log("--- generateMagicCircle DRAWING ---");
+
+    if (!ctx) { console.error("Cannot draw: No canvas context!"); return; }
+    if (!currentCircleDef) { console.log("Cannot draw: No circle definition exists yet."); return; }
+
+    // Read VISUAL controls
+    const primaryColor = primaryColorPicker.value;
+    const secondaryColor = secondaryColorPicker.value;
+    const enableGlow = glowToggle.checked;
+    const glowAmount = 10;
+
+    // Assign colors based on definition (can be customized more later)
+    const symbolColor = primaryColor;
+    const connectColor = secondaryColor;
+    const radialLineColor = secondaryColor;
+    const shapeColor = secondaryColor; // Color for polygon/star itself
+
+    // Get current symbols based on stored key (important if set changes but redraw happens before re-gen)
+    currentSymbols = symbolSets[currentCircleDef.symbolSetKey] || symbolSets['geometric'];
+
+
+    // 1. Clear Canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // --- Draw Outer Circles ---
+    currentCircleDef.circles.forEach(circle => {
+        if (enableGlow) applyGlow(primaryColor, glowAmount);
+        drawCircle(centerX, centerY, circle.radius, primaryColor, circle.lineWidth);
+        if (enableGlow) resetGlow();
+    });
+
+    // --- Draw Inner Shape ---
+    const shape = currentCircleDef.innerShape;
+    if (shape) {
+         if (enableGlow) applyGlow(shapeColor, glowAmount);
+         if (shape.type === 'polygon') {
+             drawPolygon(centerX, centerY, shape.radius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+         } else if (shape.type === 'star') {
+             drawStar(centerX, centerY, shape.outerRadius, shape.innerRadius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+         }
+         if (enableGlow) resetGlow();
+    }
+
+     // --- Draw Connecting Lines ---
+     currentCircleDef.connectingLines.forEach(line => {
+         if (enableGlow) applyGlow(connectColor, glowAmount * 0.5);
+         drawLine(line.x1, line.y1, line.x2, line.y2, connectColor, line.lineWidth);
+         if (enableGlow) resetGlow();
+     });
+
+    // --- Draw Vertex Symbols ---
+    currentCircleDef.vertexSymbols.forEach(sym => {
+        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
+        drawSymbol(sym.symbol, sym.x, sym.y, sym.size, symbolColor);
+         if (enableGlow) resetGlow();
+    });
+
+    // --- Draw Ring Symbols ---
+    currentCircleDef.ringSymbols.forEach(sym => {
+         if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
+         drawSymbol(sym.symbol, sym.x, sym.y, sym.size, symbolColor);
+         if (enableGlow) resetGlow();
+    });
+
+    // --- Draw Radial Lines ---
+    currentCircleDef.radialLines.forEach(line => {
+        if (enableGlow) applyGlow(radialLineColor, glowAmount * 0.5);
+        drawLine(line.x1, line.y1, line.x2, line.y2, radialLineColor, line.lineWidth);
+        if (enableGlow) resetGlow();
+    });
+
+
+    console.log("--- Drawing complete ---");
+} // End of generateMagicCircle
 
 // --- Event Listeners ---
 // Ensure listeners are attached only if elements exist
+// --- Event Listeners ---
+
+// Button: Creates NEW definition AND draws
 if (generateBtn) {
-    generateBtn.addEventListener('click', generateMagicCircle);
+    generateBtn.addEventListener('click', () => {
+        createCircleDefinition(); // Create new structure
+        generateMagicCircle(); // Draw it
+    });
     console.log("Generate button listener attached.");
-} else {
-    console.error("Could not attach listener to Generate button!");
 }
 
-// Listener for RINGS slider (using updated ID)
+// STRUCTURAL Controls: Create NEW definition AND draw
 if (numRingsSlider && numRingsValueSpan) {
     numRingsSlider.addEventListener('input', () => {
         numRingsValueSpan.textContent = numRingsSlider.value;
-        generateMagicCircle();
+        createCircleDefinition(); // Create new structure
+        generateMagicCircle(); // Draw it
     });
     console.log("Rings slider listener attached.");
-
-} else {
-    console.error("Could not attach listener or set initial value for Slider/Span!");
 }
-
-// Listener for SHAPE select
 if (innerShapeSelect) {
     innerShapeSelect.addEventListener('change', () => {
-        console.log(`Inner shape dropdown changed to: ${innerShapeSelect.value}`);
-        generateMagicCircle(); // Regenerate when selection changes
+        createCircleDefinition(); // Create new structure
+        generateMagicCircle(); // Draw it
     });
     console.log("Inner shape select listener attached.");
-} else {
-    console.error("Could not attach listener to Inner Shape select!");
 }
-
-// Listener for SYMBOL SET select
 if (symbolSetSelect) {
-    symbolSetSelect.addEventListener('change', () => { // 'change' is better for select elements
-        console.log(`Symbol set dropdown changed to: ${symbolSetSelect.value}`);
-        generateMagicCircle(); // Regenerate the circle with the new set
+    symbolSetSelect.addEventListener('change', () => {
+        createCircleDefinition(); // Create new structure
+        generateMagicCircle(); // Draw it
     });
     console.log("Symbol set select listener attached.");
-} else {
-    console.error("Could not attach listener to Symbol Set select!");
 }
-
-// Listener for SYMBOL COUNT slider (NEW)
 if (numSymbolsSlider && numSymbolsValueSpan) {
     numSymbolsSlider.addEventListener('input', () => {
         numSymbolsValueSpan.textContent = numSymbolsSlider.value;
-        generateMagicCircle();
+        createCircleDefinition(); // Create new structure
+        generateMagicCircle(); // Draw it
     });
     console.log("Symbols slider listener attached.");
-} else {
-     console.error("Could not attach listener to Symbols slider/span!");
 }
 
-// Listener for Primary Color Picker
+
+// VISUAL Controls: ONLY redraw using EXISTING definition
 if (primaryColorPicker) {
     primaryColorPicker.addEventListener('input', () => {
-        // No text span to update, just regenerate
-        console.log(`Primary color changed to: ${primaryColorPicker.value}`);
-        generateMagicCircle();
+        // NO createCircleDefinition() here!
+        generateMagicCircle(); // Only redraw
     });
     console.log("Primary color picker listener attached.");
-} else {
-     console.error("Could not attach listener to Primary color picker!");
 }
-
-// Listener for Secondary Color Picker
 if (secondaryColorPicker) {
     secondaryColorPicker.addEventListener('input', () => {
-        console.log(`Secondary color changed to: ${secondaryColorPicker.value}`);
-        generateMagicCircle();
+        // NO createCircleDefinition() here!
+        generateMagicCircle(); // Only redraw
     });
-     console.log("Secondary color picker listener attached.");
-} else {
-     console.error("Could not attach listener to Secondary color picker!");
+    console.log("Secondary color picker listener attached.");
 }
-
-// Listener for Glow Toggle
 if (glowToggle) {
-    glowToggle.addEventListener('change', () => { // 'change' event works for checkboxes
-        console.log(`Glow toggle changed to: ${glowToggle.checked}`);
-        generateMagicCircle(); // Regenerate when toggle changes
+    glowToggle.addEventListener('change', () => {
+        // NO createCircleDefinition() here!
+        generateMagicCircle(); // Only redraw
     });
     console.log("Glow toggle listener attached.");
-} else {
-    console.error("Could not attach listener to Glow toggle!");
 }
 
-// --- Initial Setup (AT THE VERY END) ---
+
+// --- Initial Setup ---
 console.log("Running initial setup...");
 
-// *** USE CORRECTED VARIABLE NAMES ***
-if (numRingsSlider && numRingsValueSpan) {
-    numRingsValueSpan.textContent = numRingsSlider.value;
-    console.log(`Initial Rings value set to: ${numRingsSlider.value}`);
-} else { console.warn("Could not set initial rings value text."); }
+// Set initial text for sliders
+if (numRingsSlider && numRingsValueSpan) { /* ... set text ... */ }
+if (numSymbolsSlider && numSymbolsValueSpan) { /* ... set text ... */ }
 
-if (numSymbolsSlider && numSymbolsValueSpan) {
-    numSymbolsValueSpan.textContent = numSymbolsSlider.value;
-    console.log(`Initial Symbols value set to: ${numSymbolsSlider.value}`);
-} else { console.warn("Could not set initial symbols value text."); }
-
-
-// *** Make sure generateMagicCircle is called only if essential elements exist ***
+// *** Create the FIRST definition AND draw it ***
 if (ctx && numRingsSlider && symbolSetSelect && innerShapeSelect && numSymbolsSlider) {
-    generateMagicCircle(); // Initial generation
+    createCircleDefinition(); // Create the first definition
+    generateMagicCircle(); // Draw the first circle
     console.log("Script loaded and initial circle generated.");
 } else {
     console.error("INITIAL GENERATION SKIPPED due to missing essential elements!");
