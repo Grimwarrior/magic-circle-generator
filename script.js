@@ -339,61 +339,93 @@ function createCircleDefinition() {
         }
     }
 
-    // --- Define Inner Shape ---
-    let innerShape = null;
-    let shapeInfo = null; // Determine type and points based on dropdown
-    if (selectedShapeValue !== 'none' && selectedShapeValue !== 'random') {
-        const parts = selectedShapeValue.split('_');
-        if (parts.length === 2) shapeInfo = { type: parts[0], points: parseInt(parts[1]) };
-    } else if (selectedShapeValue === 'random') {
-        if (Math.random() < 0.5) shapeInfo = { type: 'polygon', points: Math.floor(Math.random() * 4) + 3 };
-        else shapeInfo = { type: 'star', points: Math.floor(Math.random() * 4) + 4 };
-    }
-
-    if (shapeInfo) {
-        const minCircleRadius = circles.length > 0 ? circles[circles.length - 1].radius : maxRadius * 0.5;
-        const shapeStartAngle = Math.random() * Math.PI * 2;
+        // --- Define Inner Shapes (Polygon + nested Star) ---
+        let innerShapes = []; // Array to hold shape definitions
+        const baseShapeStartAngle = Math.random() * Math.PI * 2; // Base rotation for alignment
         const shapeLineWidth = baseLineWidth;
+        const minCircleRadius = circles.length > 0 ? circles[circles.length - 1].radius : maxRadius * 0.5;
 
-        if (minCircleRadius > 10) {
-            if (shapeInfo.type === 'polygon') {
-                const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4);
-                if (polyRadius > 5) {
-                    innerShape = { type: 'polygon', points: shapeInfo.points, radius: polyRadius, angle: shapeStartAngle, lineWidth: shapeLineWidth };
-                }
-            } else if (shapeInfo.type === 'star') {
-                const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4);
-                const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2);
-                if (starOuterRadius > 5 && starInnerRadius > 0) {
-                    innerShape = { type: 'star', points: shapeInfo.points, outerRadius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle, lineWidth: shapeLineWidth };
-                }
+        let availableRadius = minCircleRadius; // Start with radius available inside circles
+
+        // 1. Define the Polygon (if possible)
+        let polygonShape = null;
+        const polySides = Math.floor(Math.random() * 4) + 3; // 3-6 sides for polygon
+        if (availableRadius > 15) { // Need more space for nested shapes
+            const polyRadius = availableRadius * (0.6 + Math.random() * 0.2); // Polygon takes 60-80% of available space
+            if (polyRadius > 10) { // Check if polygon itself is large enough
+                polygonShape = {
+                    type: 'polygon',
+                    points: polySides,
+                    radius: polyRadius,
+                    angle: baseShapeStartAngle, // Use common start angle
+                    lineWidth: shapeLineWidth
+                };
+                innerShapes.push(polygonShape);
+                availableRadius = polyRadius * (0.4 + Math.random() * 0.2); // Next shape fits inside 40-60% of polygon radius
+                console.log(`Defined polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
+            } else {
+                console.log("Skipping polygon definition: Calculated radius too small.");
             }
+        } else {
+            console.log("Skipping polygon definition: Available radius too small.");
         }
-    }
 
-    // --- Define Vertex Symbols ---
-    let vertexSymbols = [];
-    if (innerShape && Math.random() < 0.7) { // 70% chance
-        const points = innerShape.points;
-        const angleOffset = innerShape.angle;
-        const vertexSymbolSize = () => 18 + Math.random() * 8; // Keep size random per symbol for now
-        const symbolSet = symbolSets[selectedSetKey] || symbolSets['geometric'];
 
-        for (let i = 0; i < points; i++) {
-             let currentAngle, vertexRadius;
-             if (innerShape.type === 'star') {
-                 vertexRadius = innerShape.outerRadius;
-                 currentAngle = angleOffset + (2 * i) * (Math.PI / points);
-             } else { // polygon
-                 vertexRadius = innerShape.radius;
-                 currentAngle = angleOffset + i * (Math.PI * 2 / points);
-             }
-             const x = centerX + vertexRadius * Math.cos(currentAngle);
-             const y = centerY + vertexRadius * Math.sin(currentAngle);
-             const symbol = symbolSet[Math.floor(Math.random() * symbolSet.length)];
-             vertexSymbols.push({ symbol: symbol, x: x, y: y, size: vertexSymbolSize() });
+        // 2. Define the Star (nested inside polygon, if polygon exists and space allows)
+        let starShape = null;
+        const starPoints = Math.floor(Math.random() * 4) + 4; // 4-7 points for star
+        if (polygonShape && availableRadius > 10) { // Must have polygon and enough space left inside it
+            const starOuterRadius = availableRadius; // Star fills the remaining space calculated earlier
+            const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2); // Standard inner ratio
+
+            if (starOuterRadius > 5 && starInnerRadius > 0) {
+                starShape = {
+                    type: 'star',
+                    points: starPoints,
+                    outerRadius: starOuterRadius,
+                    innerRadius: starInnerRadius,
+                    angle: baseShapeStartAngle + (Math.random() * (Math.PI / starPoints)), // Slightly offset angle from polygon
+                    lineWidth: shapeLineWidth * 0.8 // Maybe slightly thinner line
+                };
+                innerShapes.push(starShape);
+                console.log(`Defined nested star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}`);
+            } else {
+                console.log("Skipping star definition: Calculated radii invalid.");
+            }
+        } else {
+            if (!polygonShape) console.log("Skipping star definition: No polygon to nest within.");
+            else console.log("Skipping star definition: Available radius inside polygon too small.");
         }
-    }
+        // --- End Inner Shapes Definition ---
+
+
+        // --- Adjust Interaction Logic to Use First Shape ---
+        const primaryInnerShape = innerShapes.length > 0 ? innerShapes[0] : null; // Get the polygon, if it exists
+
+
+        // --- Define Vertex Symbols (Based on primaryInnerShape) ---
+        let vertexSymbols = [];
+        // Only use the FIRST shape (polygon) for vertex symbols for now
+        if (primaryInnerShape && primaryInnerShape.type === 'polygon' && Math.random() < 0.7) {
+            console.log(`Defining vertex symbols for polygon (${primaryInnerShape.points} points)`);
+            const points = primaryInnerShape.points;
+            const angleOffset = primaryInnerShape.angle;
+            const vertexRadius = primaryInnerShape.radius;
+            const symbolSet = symbolSets[selectedSetKey] || symbolSets['geometric'];
+            const vertexSymbolSize = () => 18 + Math.random() * 8;
+
+            for (let i = 0; i < points; i++) {
+                const currentAngle = angleOffset + i * (Math.PI * 2 / points);
+                const x = centerX + vertexRadius * Math.cos(currentAngle);
+                const y = centerY + vertexRadius * Math.sin(currentAngle);
+                const symbol = symbolSet[Math.floor(Math.random() * symbolSet.length)];
+                vertexSymbols.push({ symbol: symbol, x: x, y: y, size: vertexSymbolSize() });
+            }
+        } else {
+            if (!primaryInnerShape) console.log("Skipping vertex symbols: No primary shape defined.");
+            else if (primaryInnerShape.type !== 'polygon') console.log("Skipping vertex symbols: Primary shape is not a polygon.");
+            else console.log("Skipping vertex symbols: Random chance failed.");
+        }
 
     // --- Define Ring Symbols ---
     let ringSymbols = [];
@@ -417,71 +449,82 @@ function createCircleDefinition() {
     }
 
 
-    // --- Define Connecting Lines ---
+    // --- Define Connecting Lines (Based on primaryInnerShape) ---
     let connectingLines = [];
-    if (innerShape && Math.random() < 0.6 && circles.length > 0) {
-        const targetRadius = circles[0].radius; // Connect to outermost circle
-        const points = innerShape.points;
-        const angleOffset = innerShape.angle;
+    // Only use the FIRST shape (polygon) for connecting lines
+    if (primaryInnerShape && primaryInnerShape.type === 'polygon' && Math.random() < 0.6 && circles.length > 0) {
+        console.log(`Defining connecting lines for polygon (${primaryInnerShape.points} points)`);
+        const targetRadius = circles[0].radius;
+        const points = primaryInnerShape.points;
+        const angleOffset = primaryInnerShape.angle;
+        const startRadius = primaryInnerShape.radius;
         const connectLineWidth = 0.75;
 
-         for (let i = 0; i < points; i++) {
-             let currentAngle, startRadius;
-             if (innerShape.type === 'star') {
-                 startRadius = innerShape.outerRadius;
-                 currentAngle = angleOffset + (2 * i) * (Math.PI / points);
-             } else {
-                 startRadius = innerShape.radius;
-                 currentAngle = angleOffset + i * (Math.PI * 2 / points);
-             }
-             const startX = centerX + startRadius * Math.cos(currentAngle);
-             const startY = centerY + startRadius * Math.sin(currentAngle);
-             const endX = centerX + targetRadius * Math.cos(currentAngle);
-             const endY = centerY + targetRadius * Math.sin(currentAngle);
-             connectingLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: connectLineWidth });
-         }
+        for (let i = 0; i < points; i++) {
+            const currentAngle = angleOffset + i * (Math.PI * 2 / points);
+            const startX = centerX + startRadius * Math.cos(currentAngle);
+            const startY = centerY + startRadius * Math.sin(currentAngle);
+            const endX = centerX + targetRadius * Math.cos(currentAngle);
+            const endY = centerY + targetRadius * Math.sin(currentAngle);
+            connectingLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: connectLineWidth });
+        }
+    } else {
+        if (!primaryInnerShape) console.log("Skipping connecting lines: No primary shape defined.");
+        else if (primaryInnerShape.type !== 'polygon') console.log("Skipping connecting lines: Primary shape not a polygon.");
+        else if (circles.length == 0) console.log("Skipping connecting lines: No outer circles.");
+        else console.log("Skipping connecting lines: Random chance failed.");
     }
 
     // --- Define Radial Lines ---
     let radialLines = [];
+    // Check if connecting lines were ALREADY defined OR if no outer circles exist
     if (connectingLines.length === 0 && circles.length > 0) {
-        const lineStartRadius = maxRadius * 0.2;
-        const lineEndRadius = maxRadius; // Use outermost radius from definition
-        const radialLineWidth = 0.75;
-    
-        if (lineStartRadius < lineEndRadius) {
-            // Check if an INNER SHAPE exists in the definition to align to
-            if (currentCircleDef && currentCircleDef.innerShape) { // Check the definition being built!
-                const shape = currentCircleDef.innerShape; // Use the shape JUST defined
-                const points = shape.points;
-                const angleOffset = shape.angle;
-                const isStar = (shape.type === 'star');
-                console.log(`Defining ${points} radial lines aligned with vertices.`);
-    
+        const lineStartRadius = maxRadius * 0.2; // Start lines at 20% radius
+        const lineEndRadius = maxRadius;         // End lines at max radius
+        const radialLineWidth = 0.75;            // Use thin lines
+
+        // Ensure radii are valid
+        if (lineStartRadius < lineEndRadius && lineStartRadius >= 0) {
+
+            // Check if a primary inner shape exists to align to
+            if (primaryInnerShape && primaryInnerShape.type === 'polygon') {
+                const points = primaryInnerShape.points;
+                const angleOffset = primaryInnerShape.angle;
+                console.log(`Defining ${points} radial lines aligned with polygon vertices.`);
+
                 for (let i = 0; i < points; i++) {
-                    let vertexAngle;
-                    if (isStar) {
-                        vertexAngle = angleOffset + (2 * i) * (Math.PI / points); // Angle to outer point
-                    } else { // polygon
-                        vertexAngle = angleOffset + i * (Math.PI * 2 / points);
-                    }
-                    // Calculate points based on vertexAngle
+                    // Calculate the angle of the polygon vertex
+                    const vertexAngle = angleOffset + i * (Math.PI * 2 / points);
+
+                    // Calculate start point based on vertexAngle and start radius
                     const startX = centerX + lineStartRadius * Math.cos(vertexAngle);
                     const startY = centerY + lineStartRadius * Math.sin(vertexAngle);
+
+                    // Calculate end point based on vertexAngle and end radius
                     const endX = centerX + lineEndRadius * Math.cos(vertexAngle);
                     const endY = centerY + lineEndRadius * Math.sin(vertexAngle);
+
+                    // Add the line definition to the array
                     radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
                 }
             } else {
-                // No inner shape - Define evenly spaced lines
-                const numLines = Math.random() < 0.5 ? 6 : 9;
+                // No primary shape OR it wasn't a polygon -> Define evenly spaced lines
+                const numLines = Math.random() < 0.5 ? 6 : 9; // Random number of lines
                 console.log(`Defining ${numLines} evenly spaced radial lines.`);
+
                 for (let i = 0; i < numLines; i++) {
+                    // Calculate evenly spaced angle
                     const angle = (Math.PI * 2 / numLines) * i;
+
+                    // Calculate start point based on angle and start radius
                     const startX = centerX + lineStartRadius * Math.cos(angle);
                     const startY = centerY + lineStartRadius * Math.sin(angle);
+
+                    // Calculate end point based on angle and end radius
                     const endX = centerX + lineEndRadius * Math.cos(angle);
                     const endY = centerY + lineEndRadius * Math.sin(angle);
+
+                    // Add the line definition to the array
                     radialLines.push({ x1: startX, y1: startY, x2: endX, y2: endY, lineWidth: radialLineWidth });
                 }
             }
@@ -489,15 +532,17 @@ function createCircleDefinition() {
             console.log("Skipping radial line definition: start/end radius invalid.");
         }
     } else {
-         if (connectingLines.length > 0) console.log("Skipping radial line definition: Connecting lines already defined.");
-         else console.log("Skipping radial line definition: No outer circles defined.");
+        // Log why skipped more clearly
+        if (connectingLines.length > 0) console.log("Skipping radial line definition: Connecting lines already defined.");
+        else if (circles.length === 0) console.log("Skipping radial line definition: No outer circles defined.");
+        // No need for another else here, covered above
     }
     // --- End Radial Lines Definition ---
 
     // --- Store the definition ---
     currentCircleDef = {
         circles: circles,
-        innerShape: innerShape,
+        innerShapes: innerShapes,
         vertexSymbols: vertexSymbols,
         ringSymbols: ringSymbols,
         connectingLines: connectingLines,
@@ -543,17 +588,21 @@ function generateMagicCircle() {
         if (enableGlow) resetGlow();
     });
 
-    // --- Draw Inner Shape ---
-    const shape = currentCircleDef.innerShape;
-    if (shape) {
-         if (enableGlow) applyGlow(shapeColor, glowAmount);
-         if (shape.type === 'polygon') {
-             drawPolygon(centerX, centerY, shape.radius, shape.points, shape.angle, shapeColor, shape.lineWidth);
-         } else if (shape.type === 'star') {
-             drawStar(centerX, centerY, shape.outerRadius, shape.innerRadius, shape.points, shape.angle, shapeColor, shape.lineWidth);
-         }
-         if (enableGlow) resetGlow();
+    // --- Draw Inner Shapes ---
+    if (currentCircleDef.innerShapes && currentCircleDef.innerShapes.length > 0) {
+        currentCircleDef.innerShapes.forEach(shape => {
+            if (enableGlow) applyGlow(shapeColor, glowAmount); // Apply glow before each shape
+
+            if (shape.type === 'polygon') {
+                drawPolygon(centerX, centerY, shape.radius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+            } else if (shape.type === 'star') {
+                drawStar(centerX, centerY, shape.outerRadius, shape.innerRadius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+            }
+
+            if (enableGlow) resetGlow(); // Reset glow after each shape
+        });
     }
+    // --- End Inner Shapes Drawing ---
 
      // --- Draw Connecting Lines ---
      currentCircleDef.connectingLines.forEach(line => {
