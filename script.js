@@ -1,7 +1,7 @@
 // --- Select HTML Elements ---
 // Make sure these run *after* the HTML elements exist
 const canvas = document.getElementById('magicCircleCanvas');
-const ctx = canvas.getContext('2d');
+const targetCtx = canvas.getContext('2d');
 const generateBtn = document.getElementById('generateBtn');
 const numRingsSlider = document.getElementById('numRingsSlider');
 const numRingsValueSpan = document.getElementById('numRingsValue');
@@ -20,7 +20,7 @@ const saveBtn = document.getElementById('saveBtn');
 
 // --- Check if elements were found (Check ALL essential ones) ---
 if (!canvas) console.error("ERROR: Canvas element not found!");
-if (!ctx) console.error("ERROR: Canvas context could not be created!");
+if (!targetCtx) console.error("ERROR: Canvas context could not be created!");
 if (!generateBtn) console.error("ERROR: Generate button not found!");
 // *** USE CORRECTED VARIABLE NAMES IN CHECKS ***
 if (!numRingsSlider) console.error("ERROR: Number of Rings Slider not found!");
@@ -138,7 +138,7 @@ let currentCircleDef = null; // Will hold the definition of the current circle
 // --- Check if elements were found ---
 // Add these checks right after selecting elements!
 if (!canvas) console.error("ERROR: Canvas element not found!");
-if (!ctx) console.error("ERROR: Canvas context could not be created!");
+if (!targetCtx) console.error("ERROR: Canvas context could not be created!");
 if (!generateBtn) console.error("ERROR: Generate button not found!");
 if (!numRingsSlider) console.error("ERROR: Number of Circles Slider not found!");
 if (!numRingsValueSpan) console.error("ERROR: Number of Circles Value Span not found!");
@@ -152,70 +152,70 @@ const centerY = height / 2;
 
 // --- Drawing Helper Functions ---
 
-function drawCircle(x, y, radius, color = 'white', lineWidth = 2) {
+function drawCircle(targetCtx, x, y, radius, color = 'white', lineWidth = 2) {
     if (radius <= 0) return;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+    targetCtx.beginPath(); // Use targetCtx
+    targetCtx.arc(x, y, radius, 0, Math.PI * 2);
+    targetCtx.strokeStyle = color;
+    targetCtx.lineWidth = lineWidth;
+    targetCtx.stroke();    // Use targetCtx
 }
 
-function drawPolygon(cx, cy, radius, sides, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
+function drawPolygon(targetCtx, cx, cy, radius, sides, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
     if (sides < 3 || radius <= 0) return;
 
-    ctx.beginPath();
+    targetCtx.beginPath();
     const angleStep = (Math.PI * 2) / sides;
     let startX = cx + radius * Math.cos(startAngle);
     let startY = cy + radius * Math.sin(startAngle);
-    ctx.moveTo(startX, startY);
+    targetCtx.moveTo(startX, startY);
 
     for (let i = 1; i <= sides; i++) {
         const currentAngle = startAngle + i * angleStep;
         const nextX = cx + radius * Math.cos(currentAngle);
         const nextY = cy + radius * Math.sin(currentAngle);
-        ctx.lineTo(nextX, nextY);
+        targetCtx.lineTo(nextX, nextY);
     }
-    // ctx.closePath(); // Uncomment if you want explicit closing for filling
+    // targetCtx.closePath(); // Uncomment if you want explicit closing for filling
 
     if (fill) {
-        ctx.fillStyle = fillColor;
-        ctx.fill();
+        targetCtx.fillStyle = fillColor;
+        targetCtx.fill();
     }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+    targetCtx.strokeStyle = color;
+    targetCtx.lineWidth = lineWidth;
+    targetCtx.stroke();
 }
 
-function drawLine(x1, y1, x2, y2, color = 'white', lineWidth = 1, style = 'solid') {
-    ctx.save(); // Save current context state (including line dash)
+function drawLine(targetCtx, x1, y1, x2, y2, color = 'white', lineWidth = 1, style = 'solid') {
+    targetCtx.save(); // Save current context state (including line dash)
 
     // Set the line dash pattern based on the style
     if (style === 'dashed') {
-        ctx.setLineDash([5, 5]); // 5px line, 5px gap
+        targetCtx.setLineDash([5, 5]); // 5px line, 5px gap
     } else if (style === 'dotted') {
-        ctx.setLineDash([1, 3]); // 1px dot, 3px gap (adjust as desired)
+        targetCtx.setLineDash([1, 3]); // 1px dot, 3px gap (adjust as desired)
     } else {
-        ctx.setLineDash([]); // Solid line
+        targetCtx.setLineDash([]); // Solid line
     }
 
     // Draw the line
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+    targetCtx.beginPath();
+    targetCtx.moveTo(x1, y1);
+    targetCtx.lineTo(x2, y2);
+    targetCtx.strokeStyle = color;
+    targetCtx.lineWidth = lineWidth;
+    targetCtx.stroke();
 
-    ctx.restore(); // Restore the previous context state (resets line dash)
+    targetCtx.restore(); // Restore the previous context state (resets line dash)
 }
 
-function drawSymbol(symbol, x, y, size = 20, color = 'white') {
-    ctx.fillStyle = color;
-    ctx.font = `${size}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(symbol, x, y);
+function drawSymbol(targetCtx, symbol, x, y, size = 20, color = 'white') {
+    targetCtx.fillStyle = color;
+    targetCtx.font = `${size}px Arial`;
+    targetCtx.textAlign = 'center';
+    targetCtx.textBaseline = 'middle';
+    targetCtx.fillText(symbol, x, y);
 }
 
 /**
@@ -231,10 +231,10 @@ function drawSymbol(symbol, x, y, size = 20, color = 'white') {
  * @param {boolean} [fill=false] - Whether to fill the star.
  * @param {string} [fillColor='grey'] - Fill color if fill is true.
  */
-function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
+function drawStar(targetCtx, cx, cy, outerRadius, innerRadius, points, startAngle, color = 'white', lineWidth = 2, fill = false, fillColor = 'grey') {
     if (points < 2 || outerRadius <= 0 || innerRadius < 0) return; // Need at least 2 points and positive radii
 
-    ctx.beginPath();
+    targetCtx.beginPath();
     // Calculate the angle between each point (outer and inner combined)
     const angleStep = Math.PI / points; // Half the step of a polygon with the same points
 
@@ -245,23 +245,23 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
         const currentY = cy + radius * Math.sin(currentAngle);
 
         if (i === 0) {
-            ctx.moveTo(currentX, currentY); // Move to the first point
+            targetCtx.moveTo(currentX, currentY); // Move to the first point
         } else {
-            ctx.lineTo(currentX, currentY); // Draw line to the next point
+            targetCtx.lineTo(currentX, currentY); // Draw line to the next point
         }
     }
 
-    ctx.closePath(); // Connect the last point back to the first
+    targetCtx.closePath(); // Connect the last point back to the first
 
     if (fill) {
-        ctx.fillStyle = fillColor;
-        ctx.fill();
+        targetCtx.fillStyle = fillColor;
+        targetCtx.fill();
     }
 
     // Always stroke after potential fill
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+    targetCtx.strokeStyle = color;
+    targetCtx.lineWidth = lineWidth;
+    targetCtx.stroke();
 }
 
 /**
@@ -269,22 +269,22 @@ function drawStar(cx, cy, outerRadius, innerRadius, points, startAngle, color = 
  * @param {string} color - The color of the glow (usually matches the drawing color).
  * @param {number} blurAmount - The amount of blur (e.g., 5, 10, 15).
  */
-function applyGlow(color = 'white', blurAmount = 10) {
-    ctx.shadowColor = color;
-    ctx.shadowBlur = blurAmount;
+function applyGlow(targetCtx, color = 'white', blurAmount = 10) {
+    targetCtx.shadowColor = color;
+    targetCtx.shadowBlur = blurAmount;
     // Optional: Add small offsets if needed
-    // ctx.shadowOffsetX = 0;
-    // ctx.shadowOffsetY = 0;
+    // targetCtx.shadowOffsetX = 0;
+    // targetCtx.shadowOffsetY = 0;
 }
 
 /**
  * Resets canvas shadow properties to disable glow.
  */
-function resetGlow() {
-    ctx.shadowColor = 'transparent'; // Or 'rgba(0,0,0,0)'
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+function resetGlow(targetCtx) {
+    targetCtx.shadowColor = 'transparent'; // Or 'rgba(0,0,0,0)'
+    targetCtx.shadowBlur = 0;
+    targetCtx.shadowOffsetX = 0;
+    targetCtx.shadowOffsetY = 0;
 }
 
 function populatePaletteOptions() {
@@ -313,6 +313,17 @@ function populatePaletteOptions() {
      if (primaryColorPicker) primaryColorPicker.value = colorPalettes['default'].primary;
      if (secondaryColorPicker) secondaryColorPicker.value = colorPalettes['default'].secondary;
 
+}
+
+// --- Helper to gather visual parameters ---
+function getVisualParams() {
+    return {
+        primaryColor: primaryColorPicker ? primaryColorPicker.value : '#FFFFFF',
+        secondaryColor: secondaryColorPicker ? secondaryColorPicker.value : '#888888',
+        enableGlow: glowToggle ? glowToggle.checked : false,
+        selectedLineStyle: lineStyleSelect ? lineStyleSelect.value : 'solid',
+        glowAmount: 10 // Or make this controllable
+    };
 }
 
 function createCircleDefinition() {
@@ -557,87 +568,82 @@ function createCircleDefinition() {
     console.log("New circle definition created:", currentCircleDef);
 }
 
-// --- The Main Generation Function ---
-function generateMagicCircle() {
-    console.log("--- generateMagicCircle DRAWING ---");
+// Rename redrawCanvas to redrawCanvas
+function redrawCanvas(targetCtx, canvasWidth, canvasHeight, definition, visualParams) {
+    console.log("--- redrawCanvas DRAWING ---");
 
-    if (!ctx) { console.error("Cannot draw: No canvas context!"); return; }
-    if (!currentCircleDef) { console.log("Cannot draw: No circle definition exists yet."); return; }
+    if (!targetCtx) { console.error("Cannot draw: No target context provided!"); return; }
+    if (!definition) { console.log("Cannot draw: No circle definition provided."); return; }
 
-    // Read VISUAL controls
-    const primaryColor = primaryColorPicker.value;
-    const secondaryColor = secondaryColorPicker.value;
-    const enableGlow = glowToggle.checked;
-    const selectedLineStyle = lineStyleSelect.value; // <<< READ LINE STYLE
-    const glowAmount = 10;
+    // Unpack visual parameters
+    const { primaryColor, secondaryColor, enableGlow, selectedLineStyle, glowAmount } = visualParams;
 
     // Assign colors based on definition (can be customized more later)
     const symbolColor = primaryColor;
     const connectColor = secondaryColor;
     const radialLineColor = secondaryColor;
-    const shapeColor = secondaryColor; // Color for polygon/star itself
+    const shapeColor = secondaryColor;
 
-    // Get current symbols based on stored key (important if set changes but redraw happens before re-gen)
-    currentSymbols = symbolSets[currentCircleDef.symbolSetKey] || symbolSets['geometric'];
+    // Get current symbols based on stored key
+    const currentSymbols = symbolSets[definition.symbolSetKey] || symbolSets['geometric'];
+    const localCenterX = canvasWidth / 2; // Use passed width/height
+    const localCenterY = canvasHeight / 2;
 
-
-    // 1. Clear Canvas
-    ctx.clearRect(0, 0, width, height);
+    // 1. Clear Canvas (on the target context)
+    targetCtx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear the specific context
 
     // --- Draw Outer Circles ---
-    currentCircleDef.circles.forEach(circle => {
-        if (enableGlow) applyGlow(primaryColor, glowAmount);
-        drawCircle(centerX, centerY, circle.radius, primaryColor, circle.lineWidth);
-        if (enableGlow) resetGlow();
+    definition.circles.forEach(circle => {
+        if (enableGlow) applyGlow(targetCtx, primaryColor, glowAmount);
+        // PASS targetCtx to helpers!
+        drawCircle(targetCtx, localCenterX, localCenterY, circle.radius, primaryColor, circle.lineWidth);
+        if (enableGlow) resetGlow(targetCtx);
     });
 
     // --- Draw Inner Shapes ---
-    if (currentCircleDef.innerShapes && currentCircleDef.innerShapes.length > 0) {
-        currentCircleDef.innerShapes.forEach(shape => {
-            if (enableGlow) applyGlow(shapeColor, glowAmount); // Apply glow before each shape
-
+    if (definition.innerShapes && definition.innerShapes.length > 0) {
+        definition.innerShapes.forEach(shape => {
+            if (enableGlow) applyGlow(targetCtx, shapeColor, glowAmount);
             if (shape.type === 'polygon') {
-                drawPolygon(centerX, centerY, shape.radius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+                drawPolygon(targetCtx, localCenterX, localCenterY, shape.radius, shape.points, shape.angle, shapeColor, shape.lineWidth);
             } else if (shape.type === 'star') {
-                drawStar(centerX, centerY, shape.outerRadius, shape.innerRadius, shape.points, shape.angle, shapeColor, shape.lineWidth);
+                drawStar(targetCtx, localCenterX, localCenterY, shape.outerRadius, shape.innerRadius, shape.points, shape.angle, shapeColor, shape.lineWidth);
             }
-
-            if (enableGlow) resetGlow(); // Reset glow after each shape
+            if (enableGlow) resetGlow(targetCtx);
         });
     }
-    // --- End Inner Shapes Drawing ---
 
      // --- Draw Connecting Lines ---
-     currentCircleDef.connectingLines.forEach(line => {
-         if (enableGlow) applyGlow(connectColor, glowAmount * 0.5);
-         drawLine(line.x1, line.y1, line.x2, line.y2, connectColor, line.lineWidth, selectedLineStyle); // <<< ADDED STYLE
-         if (enableGlow) resetGlow();
+     definition.connectingLines.forEach(line => {
+         if (enableGlow) applyGlow(targetCtx, connectColor, glowAmount * 0.5);
+         drawLine(targetCtx, line.x1, line.y1, line.x2, line.y2, connectColor, line.lineWidth, selectedLineStyle);
+         if (enableGlow) resetGlow(targetCtx);
      });
 
     // --- Draw Vertex Symbols ---
-    currentCircleDef.vertexSymbols.forEach(sym => {
-        if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
-        drawSymbol(sym.symbol, sym.x, sym.y, sym.size, symbolColor);
-         if (enableGlow) resetGlow();
+    definition.vertexSymbols.forEach(sym => {
+        // Need to find the symbol text from the definition or pass currentSymbols
+        if (enableGlow) applyGlow(targetCtx, symbolColor, glowAmount * 0.7);
+        drawSymbol(targetCtx, sym.symbol, sym.x, sym.y, sym.size, symbolColor); // Pass targetCtx
+        if (enableGlow) resetGlow(targetCtx);
     });
 
     // --- Draw Ring Symbols ---
-    currentCircleDef.ringSymbols.forEach(sym => {
-         if (enableGlow) applyGlow(symbolColor, glowAmount * 0.7);
-         drawSymbol(sym.symbol, sym.x, sym.y, sym.size, symbolColor);
-         if (enableGlow) resetGlow();
+    definition.ringSymbols.forEach(sym => {
+         if (enableGlow) applyGlow(targetCtx, symbolColor, glowAmount * 0.7);
+         drawSymbol(targetCtx, sym.symbol, sym.x, sym.y, sym.size, symbolColor); // Pass targetCtx
+         if (enableGlow) resetGlow(targetCtx);
     });
 
     // --- Draw Radial Lines ---
-    currentCircleDef.radialLines.forEach(line => {
-        if (enableGlow) applyGlow(radialLineColor, glowAmount * 0.5);
-        drawLine(line.x1, line.y1, line.x2, line.y2, radialLineColor, line.lineWidth, selectedLineStyle); // <<< ADDED STYLE
-        if (enableGlow) resetGlow();
+    definition.radialLines.forEach(line => {
+        if (enableGlow) applyGlow(targetCtx, radialLineColor, glowAmount * 0.5);
+        drawLine(targetCtx, line.x1, line.y1, line.x2, line.y2, radialLineColor, line.lineWidth, selectedLineStyle);
+        if (enableGlow) resetGlow(targetCtx);
     });
 
-
-    console.log("--- Drawing complete ---");
-} // End of generateMagicCircle
+    console.log("--- Drawing complete on target context ---");
+} // End of redrawCanvas
 
 // --- Event Listeners ---
 // Ensure listeners are attached only if elements exist
@@ -647,7 +653,7 @@ function generateMagicCircle() {
 if (generateBtn) {
     generateBtn.addEventListener('click', () => {
         createCircleDefinition(); // Create new structure
-        generateMagicCircle(); // Draw it
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Generate button listener attached.");
 }
@@ -657,21 +663,21 @@ if (numRingsSlider && numRingsValueSpan) {
     numRingsSlider.addEventListener('input', () => {
         numRingsValueSpan.textContent = numRingsSlider.value;
         createCircleDefinition(); // Create new structure
-        generateMagicCircle(); // Draw it
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Rings slider listener attached.");
 }
 if (innerShapeSelect) {
     innerShapeSelect.addEventListener('change', () => {
         createCircleDefinition(); // Create new structure
-        generateMagicCircle(); // Draw it
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Inner shape select listener attached.");
 }
 if (symbolSetSelect) {
     symbolSetSelect.addEventListener('change', () => {
         createCircleDefinition(); // Create new structure
-        generateMagicCircle(); // Draw it
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Symbol set select listener attached.");
 }
@@ -679,7 +685,7 @@ if (numSymbolsSlider && numSymbolsValueSpan) {
     numSymbolsSlider.addEventListener('input', () => {
         numSymbolsValueSpan.textContent = numSymbolsSlider.value;
         createCircleDefinition(); // Create new structure
-        generateMagicCircle(); // Draw it
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Symbols slider listener attached.");
 }
@@ -687,47 +693,88 @@ if (numSymbolsSlider && numSymbolsValueSpan) {
 if (lineStyleSelect) {
     lineStyleSelect.addEventListener('change', () => {
         console.log(`Line style changed to: ${lineStyleSelect.value}`);
-        generateMagicCircle(); // Only redraw, don't create new definition
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Line style select listener attached.");
 } else {
     console.error("Could not attach listener to Line Style select!");
 }
+
 // Downloads the current drawing
-if (saveBtn && canvas) { // Check if both button and canvas exist
+// Replace the existing saveBtn listener content with this:
+if (saveBtn && canvas) {
     saveBtn.addEventListener('click', () => {
-        console.log("Save button clicked.");
+        console.log("Save button clicked. Preparing high-res image...");
 
-        // 1. Get the image data from the canvas as a PNG
-        //    toDataURL() returns a base64 encoded string
-        const imageDataUrl = canvas.toDataURL('image/png');
+        if (!currentCircleDef) {
+            console.error("Cannot save: No circle definition exists!");
+            return;
+        }
 
-        // 2. Create a temporary link element
-        const link = document.createElement('a');
+        // 1. Define Scale Factor & Dimensions
+        const scaleFactor = 3; // Increase resolution by 3x (adjust as needed)
+        const offscreenWidth = width * scaleFactor;
+        const offscreenHeight = height * scaleFactor;
 
-        // 3. Set the link's attributes
-        link.href = imageDataUrl; // Point to the image data
-        link.download = 'magic_circle.png'; // Suggest a filename for the download
+        // 2. Create Off-screen Canvas
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = offscreenWidth;
+        offscreenCanvas.height = offscreenHeight;
+        const offCtx = offscreenCanvas.getContext('2d');
 
-        // 4. Simulate a click on the link to trigger the download
-        //    We need to append the link to the body, click it, then remove it.
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        if (!offCtx) {
+            console.error("Cannot save: Failed to get off-screen context!");
+            return;
+        }
 
-        console.log("Image download initiated.");
+        // --- IMPORTANT ---
+        // Do NOT fill background for transparency
+        // offCtx is already clear initially
+
+        // 3. Apply Scaling to the Context
+        offCtx.scale(scaleFactor, scaleFactor);
+
+        // 4. Get Current Visual Params
+        const visualParams = getVisualParams();
+
+        // 5. Draw on the Off-screen Canvas (using the original width/height for drawing logic)
+        // The scale transform handles the enlargement.
+        console.log("Drawing high-res version...");
+        redrawCanvas(offCtx, width, height, currentCircleDef, visualParams); // Use ORIGINAL width/height here!
+        console.log("High-res drawing complete.");
+
+        // 6. Get Data URL from Off-screen Canvas
+        try {
+            const imageDataUrl = offscreenCanvas.toDataURL('image/png');
+            console.log("Generated Data URL (first 100 chars):", imageDataUrl.substring(0, 100));
+
+            if (!imageDataUrl || !imageDataUrl.startsWith('data:image/png;base64,')) {
+                 console.error("Error: Invalid Data URL generated from offscreen canvas!");
+                 return;
+            }
+
+            // 7. Trigger Download
+            const link = document.createElement('a');
+            link.href = imageDataUrl;
+            link.download = 'magic_circle_hires.png'; // Suggest hires filename
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("High-res image download initiated.");
+
+        } catch (error) {
+            console.error("Error during high-res save process:", error);
+        }
     });
-    console.log("Save button listener attached.");
-} else {
-    console.error("Could not attach listener to Save button or canvas missing!");
-}
+    console.log("Save button listener attached (with hires logic).");
+} else { /* error log */ }
 
 // VISUAL Controls: ONLY redraw using EXISTING definition
 if (primaryColorPicker) {
     primaryColorPicker.addEventListener('input', () => {
         console.log(`Primary color changed to: ${primaryColorPicker.value}`);
         if (paletteSelect) paletteSelect.value = 'custom'; // <<< Set palette to Custom
-        generateMagicCircle();
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     // console.log("Primary color picker listener attached.");
 }
@@ -737,7 +784,7 @@ if (secondaryColorPicker) {
     secondaryColorPicker.addEventListener('input', () => {
         console.log(`Secondary color changed to: ${secondaryColorPicker.value}`);
          if (paletteSelect) paletteSelect.value = 'custom'; // <<< Set palette to Custom
-        generateMagicCircle();
+         redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
      // console.log("Secondary color picker listener attached.");
 }
@@ -745,7 +792,7 @@ if (secondaryColorPicker) {
 if (glowToggle) {
     glowToggle.addEventListener('change', () => {
         // NO createCircleDefinition() here!
-        generateMagicCircle(); // Only redraw
+        redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     });
     console.log("Glow toggle listener attached.");
 }
@@ -761,7 +808,7 @@ if (paletteSelect && primaryColorPicker && secondaryColorPicker) {
             primaryColorPicker.value = palette.primary;
             secondaryColorPicker.value = palette.secondary;
             // Redraw the circle with the new colors
-            generateMagicCircle();
+            redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
         }
         // If 'custom' is selected, we don't change the pickers,
         // the user will change them manually.
@@ -780,9 +827,9 @@ if (numRingsSlider && numRingsValueSpan) { /* ... set text ... */ }
 if (numSymbolsSlider && numSymbolsValueSpan) { /* ... set text ... */ }
 
 // *** Create the FIRST definition AND draw it ***
-if (ctx && numRingsSlider && symbolSetSelect && innerShapeSelect && numSymbolsSlider) {
+if (targetCtx && numRingsSlider && symbolSetSelect && innerShapeSelect && numSymbolsSlider) {
     createCircleDefinition(); // Create the first definition
-    generateMagicCircle(); // Draw the first circle
+    redrawCanvas(ctx, width, height, currentCircleDef, getVisualParams()); // Redraw on screen
     console.log("Script loaded and initial circle generated.");
 } else {
     console.error("INITIAL GENERATION SKIPPED due to missing essential elements!");
