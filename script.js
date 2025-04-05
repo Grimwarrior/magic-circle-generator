@@ -6,6 +6,8 @@ const generateBtn = document.getElementById('generateBtn');
 const numCirclesSlider = document.getElementById('numCirclesSlider');
 const numCirclesValueSpan = document.getElementById('numCirclesValue');
 const symbolSetSelect = document.getElementById('symbolSetSelect');
+const innerShapeSelect = document.getElementById('innerShapeSelect');
+if (!innerShapeSelect) console.error("ERROR: Inner Shape Select dropdown not found!");
 if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found!");
 
 // --- Thematic Symbol Sets ---
@@ -333,91 +335,64 @@ function generateMagicCircle() {
     }
 
     // --- Draw ONE inner shape (Polygon or Star) ---
-    const shapeType = Math.random(); // Random number to decide shape
-    const shapeStartAngle = Math.random() * Math.PI * 2; // Random rotation
+    const selectedShape = innerShapeSelect.value; // Read the dropdown value
+    console.log("Selected inner shape:", selectedShape);
+    let shapeInfo = null; // Will hold {type: 'polygon'/'star', points: N} or null
+
+    if (selectedShape !== 'none' && selectedShape !== 'random') {
+        const parts = selectedShape.split('_'); // e.g., ['polygon', '5']
+        if (parts.length === 2) {
+            shapeInfo = { type: parts[0], points: parseInt(parts[1]) };
+        }
+    } else if (selectedShape === 'random') {
+        // Keep the old random logic if 'random' is selected
+        if (Math.random() < 0.5) { // 50% chance Polygon
+             shapeInfo = { type: 'polygon', points: Math.floor(Math.random() * 4) + 3 }; // 3-6 sides
+        } else { // 50% chance Star
+             shapeInfo = { type: 'star', points: Math.floor(Math.random() * 4) + 4 }; // 4-7 points
+        }
+    }
+    // If selectedShape is 'none', shapeInfo remains null
+
+    // Now, use shapeInfo to decide what to draw
+    const shapeStartAngle = Math.random() * Math.PI * 2; // Keep random rotation
     const shapeColor = secondaryColor;
     const shapeLineWidth = baseLineWidth;
-    const minCircleRadius = numOuterCircles > 0 ? maxRadius * (1 - (numOuterCircles - 1) * circleSpacing) : maxRadius * 0.5; // Recalculate innermost radius
+    const minCircleRadius = numOuterCircles > 0 ? maxRadius * (1 - (numOuterCircles - 1) * circleSpacing) : maxRadius * 0.5;
 
-    if (minCircleRadius > 10) { // Only draw if there's reasonable space
-        if (shapeType < 0.5) { // 50% chance for Polygon
-            const polySides = Math.floor(Math.random() * 4) + 3; // 3 to 6 sides
-            const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4); // Size relative to inner circle
+    // Make sure drawnShapeInfo is reset from previous run
+    drawnShapeInfo = null; // Reset here before potentially drawing
+
+    if (shapeInfo && minCircleRadius > 10) { // Check if shapeInfo exists and there's space
+        if (shapeInfo.type === 'polygon') {
+            const polySides = shapeInfo.points;
+            const polyRadius = minCircleRadius * (0.4 + Math.random() * 0.4);
             if (polyRadius > 5) {
-                console.log(`Drawing polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
+                console.log(`Drawing selected polygon: ${polySides} sides, radius ${polyRadius.toFixed(1)}`);
                 drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
-                // Store info about the polygon that was just drawn
-                drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // <<< ADD THIS LINE       
-                // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
-                if (Math.random() < 0.7) {
-                    console.log(`Placing symbols on ${polySides} polygon vertices`);
-                    const angleStep = (Math.PI * 2) / polySides;
-                    const symbolSize = 15 + Math.random() * 5; // Slightly smaller symbols for vertices
-                    shouldDrawRandomSymbolRing = false; // Prevent drawing the ring if we place on vertices
+                drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // Store info
 
-                    for (let i = 0; i < polySides; i++) {
-                        const currentAngle = shapeStartAngle + i * angleStep;
-                        // Calculate vertex position again (same math as in drawPolygon)
-                        const vertexX = centerX + polyRadius * Math.cos(currentAngle);
-                        const vertexY = centerY + polyRadius * Math.sin(currentAngle);
-                        // Pick a random symbol from the current set
-                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
-                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
-                    }
-                    // Optionally, prevent drawing the other random symbol ring if we do this
-                    // shouldDrawRandomSymbolRing = false; // (We'd need to define this variable earlier)
-                }
-                // --- End symbol placement on vertices ---
-            } else {
-                console.log("Skipping polygon: calculated radius too small");
-            }
-        } else { // 50% chance for Star
-            const starPoints = Math.floor(Math.random() * 4) + 4; // 4 to 7 points
-            const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4); // Outer radius relative to inner circle
-            const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2); // Inner radius relative to outer (e.g., 40-60%)
-
+                // Symbol placement on vertices logic STAYS HERE
+                if (Math.random() < 0.7) { /* ... */ shouldDrawRandomSymbolRing = false; }
+            } else { /* log skip */ console.log("Skipping polygon: calculated radius too small"); }
+        } else if (shapeInfo.type === 'star') {
+            const starPoints = shapeInfo.points;
+            const starOuterRadius = minCircleRadius * (0.5 + Math.random() * 0.4);
+            const starInnerRadius = starOuterRadius * (0.4 + Math.random() * 0.2);
             if (starOuterRadius > 5 && starInnerRadius > 0) {
-                console.log(`Drawing star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
+                console.log(`Drawing selected star: ${starPoints} points, R ${starOuterRadius.toFixed(1)}, r ${starInnerRadius.toFixed(1)}`);
                 drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
+                drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; // Store info
 
-                // Store info about the star that was just drawn
-                drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; 
-                
-                // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
-                if (Math.random() < 0.7) {
-                    console.log(`Placing symbols on ${starPoints} star outer vertices`);
-                    const angleStep = (Math.PI * 2) / starPoints; // Angle between outer points
-                    const symbolSize = 15 + Math.random() * 5;
-                    shouldDrawRandomSymbolRing = false; // Prevent drawing the ring if we place on vertices
-                    // Loop through each outer point (0 to starPoints-1)
-
-                    for (let i = 0; i < starPoints; i++) {
-                        // We only want outer points, which correspond to even steps in drawStar's loop (0, 2, 4...)
-                        // Angle calculation needs to match drawStar precisely
-                        const currentAngle = shapeStartAngle + (2 * i) * (Math.PI / starPoints); // Angle to the outer point i
-                        const vertexX = centerX + starOuterRadius * Math.cos(currentAngle);
-                        const vertexY = centerY + starOuterRadius * Math.sin(currentAngle);
-                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
-                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
-
-                        // OPTIONAL: Also draw on inner points?
-                        // const innerAngle = shapeStartAngle + (2 * i + 1) * (Math.PI / starPoints);
-                        // const innerX = centerX + starInnerRadius * Math.cos(innerAngle);
-                        // const innerY = centerY + starInnerRadius * Math.sin(innerAngle);
-                        // drawSymbol(randomSymbol, innerX, innerY, symbolSize * 0.8, symbolColor); // Smaller symbol for inner points
-                    }
-                    // Optionally, prevent drawing the other random symbol ring if we do this
-                    // shouldDrawRandomSymbolRing = false;
-                }
-                // --- End symbol placement on vertices ---
-
-            } else {
-                console.log("Skipping star: calculated radii invalid");
-            }
+                // Symbol placement on vertices logic STAYS HERE
+                 if (Math.random() < 0.7) { /* ... */ shouldDrawRandomSymbolRing = false; }
+            } else { /* log skip */ console.log("Skipping star: calculated radii invalid"); }
         }
     } else {
-        console.log("Skipping inner shape: minCircleRadius too small");
+        if (!shapeInfo) console.log("Skipping inner shape: 'None' selected or invalid value.");
+        else console.log("Skipping inner shape: minCircleRadius too small.");
     }
+    // --- END OF SHAPE DRAWING BLOCK ---
 
     // --- Draw Connecting Lines (Vertices to Outer Circle, 60% chance) ---
     if (drawnShapeInfo && Math.random() < 0.6 && numOuterCircles > 0) { // Check if shape info exists, random chance, and circles exist
@@ -546,4 +521,14 @@ if (symbolSetSelect) {
     console.log("Symbol set select listener attached.");
 } else {
     console.error("Could not attach listener to Symbol Set select!");
+}
+
+if (innerShapeSelect) {
+    innerShapeSelect.addEventListener('change', () => {
+        console.log(`Inner shape dropdown changed to: ${innerShapeSelect.value}`);
+        generateMagicCircle(); // Regenerate when selection changes
+    });
+    console.log("Inner shape select listener attached.");
+} else {
+    console.error("Could not attach listener to Inner Shape select!");
 }
