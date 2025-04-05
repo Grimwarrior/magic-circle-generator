@@ -372,8 +372,21 @@ function generateMagicCircle() {
                 drawPolygon(centerX, centerY, polyRadius, polySides, shapeStartAngle, shapeColor, shapeLineWidth);
                 drawnShapeInfo = { type: 'polygon', points: polySides, radius: polyRadius, angle: shapeStartAngle }; // Store info
 
-                // Symbol placement on vertices logic STAYS HERE
-                if (Math.random() < 0.7) { /* ... */ shouldDrawRandomSymbolRing = false; }
+                // --- Place symbols on Polygon Vertices (Example: 70% chance) ---
+                if (Math.random() < 0.7) { // Check the random chance FIRST
+                    console.log(`Placing symbols on ${polySides} polygon vertices`);
+                    shouldDrawRandomSymbolRing = false; // <<< SET FLAG **INSIDE** THE IF
+
+                    const angleStep = (Math.PI * 2) / polySides;
+                    const symbolSize = 15 + Math.random() * 5;
+                    for (let i = 0; i < polySides; i++) {
+                        // ... (calculate vertexX, vertexY) ...
+                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+                    }
+                } // <<< END of the 70% chance block
+                // --- End symbol placement on vertices ---
+                
             } else { /* log skip */ console.log("Skipping polygon: calculated radius too small"); }
         } else if (shapeInfo.type === 'star') {
             const starPoints = shapeInfo.points;
@@ -384,8 +397,21 @@ function generateMagicCircle() {
                 drawStar(centerX, centerY, starOuterRadius, starInnerRadius, starPoints, shapeStartAngle, shapeColor, shapeLineWidth);
                 drawnShapeInfo = { type: 'star', points: starPoints, radius: starOuterRadius, innerRadius: starInnerRadius, angle: shapeStartAngle }; // Store info
 
-                // Symbol placement on vertices logic STAYS HERE
-                 if (Math.random() < 0.7) { /* ... */ shouldDrawRandomSymbolRing = false; }
+                // --- Place symbols on Star Vertices (Example: Outer points only, 70% chance) ---
+                if (Math.random() < 0.7) { // Check the random chance FIRST
+                    console.log(`Placing symbols on ${starPoints} star outer vertices`);
+                    shouldDrawRandomSymbolRing = false; // <<< SET FLAG **INSIDE** THE IF
+
+                    const angleStep = (Math.PI * 2) / starPoints;
+                    const symbolSize = 15 + Math.random() * 5;
+                    for (let i = 0; i < starPoints; i++) {
+                    // ... (calculate vertexX, vertexY for outer point) ...
+                        const randomSymbol = currentSymbols[Math.floor(Math.random() * currentSymbols.length)];
+                        drawSymbol(randomSymbol, vertexX, vertexY, symbolSize, symbolColor);
+                    }
+                } // <<< END of the 70% chance block
+                // --- End symbol placement on vertices ---
+
             } else { /* log skip */ console.log("Skipping star: calculated radii invalid"); }
         }
     } else {
