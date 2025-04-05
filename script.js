@@ -3,10 +3,16 @@
 const canvas = document.getElementById('magicCircleCanvas');
 const ctx = canvas.getContext('2d');
 const generateBtn = document.getElementById('generateBtn');
-const numCirclesSlider = document.getElementById('numCirclesSlider');
-const numCirclesValueSpan = document.getElementById('numCirclesValue');
+const numRingsSlider = document.getElementById('numRingsSlider');
+const numRingsValueSpan = document.getElementById('numRingsValue');
 const symbolSetSelect = document.getElementById('symbolSetSelect');
 const innerShapeSelect = document.getElementById('innerShapeSelect');
+const numSymbolsSlider = document.getElementById('numSymbolsSlider');
+const numSymbolsValueSpan = document.getElementById('numSymbolsValue');
+
+if (!numSymbolsSlider) console.error("ERROR: Number of Symbols Slider not found!");
+if (!numSymbolsValueSpan) console.error("ERROR: Number of Symbols Value Span not found!");
+
 if (!innerShapeSelect) console.error("ERROR: Inner Shape Select dropdown not found!");
 if (!symbolSetSelect) console.error("ERROR: Symbol Set Select dropdown not found!");
 
@@ -472,10 +478,10 @@ function generateMagicCircle() {
     // Make symbol ring radius relative to maxRadius, ensure it's inside the outermost circle
     const symbolRadiusFactor = 0.6 + Math.random() * 0.25; // Place symbols between 60% and 85% of maxRadius
     const symbolRadius = maxRadius * symbolRadiusFactor;
-    const numSymbols = Math.floor(Math.random() * 7) + 4; // 4 to 10 symbols
+    const numSymbols = parseInt(numSymbolsSlider.value); // <<< USE SLIDER VALUE
     const symbolStartAngle = Math.random() * Math.PI * 2; // Give symbols their own random start angle
 
-    if (symbolRadius > 5 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
+    if (numSymbols > 0 && symbolRadius > 5 && numOuterCircles > 0) { // Only draw symbols if there's space and circles
         console.log(`Drawing ${numSymbols} symbols at random radius ${symbolRadius.toFixed(1)}`);
         for (let i = 0; i < numSymbols; i++) {
             const angle = symbolStartAngle + (Math.PI * 2 / numSymbols) * i; // Distribute evenly
@@ -488,7 +494,7 @@ function generateMagicCircle() {
             drawSymbol(randomSymbol, symX, symY, symbolSize, symbolColor);
         }
     } else {
-        console.log("Skipping random symbols (radius or circle count too low)");
+        console.log("Skipping random symbols (count is 0, or radius/circle count too low)");
     }
 
 
@@ -527,23 +533,30 @@ if (generateBtn) {
     console.error("Could not attach listener to Generate button!");
 }
 
-if (numCirclesSlider && numCirclesValueSpan) {
-    numCirclesSlider.addEventListener('input', () => {
-        console.log(`Slider input event fired! New value: ${numCirclesSlider.value}`); // Log slider move
-        numCirclesValueSpan.textContent = numCirclesSlider.value; // Update text display
-        generateMagicCircle(); // Regenerate circle when slider changes
+// Listener for RINGS slider (using updated ID)
+if (numRingsSlider && numRingsValueSpan) {
+    numRingsSlider.addEventListener('input', () => {
+        numRingsValueSpan.textContent = numRingsSlider.value;
+        generateMagicCircle();
     });
-    console.log("Slider input listener attached.");
-
-    // --- Initial Setup ---
-    console.log("Setting initial slider text value.");
-    numCirclesValueSpan.textContent = numCirclesSlider.value; // Set initial text for the slider value
-    generateMagicCircle(); // Generate one when the page loads
+    console.log("Rings slider listener attached.");
 
 } else {
     console.error("Could not attach listener or set initial value for Slider/Span!");
 }
 
+// Listener for SHAPE select
+if (innerShapeSelect) {
+    innerShapeSelect.addEventListener('change', () => {
+        console.log(`Inner shape dropdown changed to: ${innerShapeSelect.value}`);
+        generateMagicCircle(); // Regenerate when selection changes
+    });
+    console.log("Inner shape select listener attached.");
+} else {
+    console.error("Could not attach listener to Inner Shape select!");
+}
+
+// Listener for SYMBOL SET select
 if (symbolSetSelect) {
     symbolSetSelect.addEventListener('change', () => { // 'change' is better for select elements
         console.log(`Symbol set dropdown changed to: ${symbolSetSelect.value}`);
@@ -554,12 +567,21 @@ if (symbolSetSelect) {
     console.error("Could not attach listener to Symbol Set select!");
 }
 
-if (innerShapeSelect) {
-    innerShapeSelect.addEventListener('change', () => {
-        console.log(`Inner shape dropdown changed to: ${innerShapeSelect.value}`);
-        generateMagicCircle(); // Regenerate when selection changes
+// Listener for SYMBOL COUNT slider (NEW)
+if (numSymbolsSlider && numSymbolsValueSpan) {
+    numSymbolsSlider.addEventListener('input', () => {
+        numSymbolsValueSpan.textContent = numSymbolsSlider.value;
+        generateMagicCircle();
     });
-    console.log("Inner shape select listener attached.");
+    console.log("Symbols slider listener attached.");
 } else {
-    console.error("Could not attach listener to Inner Shape select!");
+     console.error("Could not attach listener to Symbols slider/span!");
 }
+
+
+
+// Set initial text for ALL controls that need it
+if(numRingsSlider) numRingsValueSpan.textContent = numRingsSlider.value;
+if(numSymbolsSlider) numSymbolsValueSpan.textContent = numSymbolsSlider.value; // Set initial symbol count text
+
+generateMagicCircle(); // Generate one when the page loads

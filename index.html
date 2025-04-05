@@ -13,9 +13,10 @@
 
     <!-- Keep this section with all controls together -->
     <div class="controls">
-        <label for="numCirclesSlider">Number of Rings:</label>
-        <input type="range" id="numCirclesSlider" name="numCirclesSlider" min="1" max="7" value="3">
-        <span id="numCirclesValue">3</span>
+        <label for="numRingsSlider">Number of Rings:</label> <!-- Renamed for clarity -->
+        <input type="range" id="numRingsSlider" name="numRingsSlider" min="0" max="7" value="3"> <!-- Allow 0 rings -->
+        <span id="numRingsValue">3</span>
+
         <label for="innerShapeSelect">Inner Shape:</label>
         <select id="innerShapeSelect" name="innerShapeSelect">
             <option value="random" selected>Random</option>
@@ -29,6 +30,7 @@
             <option value="star_6">Hexagram (6pt Star)</option>
             <option value="star_7">Heptagram (7pt Star)</option>
         </select>
+
         <label for="symbolSetSelect">Symbol Set:</label>
         <select id="symbolSetSelect" name="symbolSetSelect">
             <option value="geometric" selected>Geometric</option>
@@ -37,6 +39,14 @@
             <option value="runes">Runes</option>
             <option value="all">All Combined</option>
         </select>
+
+        <!-- NEW SLIDER FOR SYMBOL COUNT -->
+        <label for="numSymbolsSlider">Number of Symbols (Ring):</label>
+        <input type="range" id="numSymbolsSlider" name="numSymbolsSlider" min="0" max="24" value="7"> <!-- Range 0 to 24, default 7 -->
+        <span id="numSymbolsValue">7</span>
+        <!-- END NEW SLIDER -->
+
+
         <button id="generateBtn">Generate New Circle</button> <!-- Now there's only ONE -->
         <!-- Add more controls later here -->
     </div>
